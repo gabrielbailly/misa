@@ -1,0 +1,218 @@
+import React, { useState } from 'react';
+import { 
+  BookOpen, 
+  Users, 
+  Music, 
+  MessageCircle, 
+  Heart, 
+  Wine, 
+  Sun, 
+  ArrowRight,
+  ChevronDown,
+  ChevronUp,
+  Sparkles,
+  Send
+} from 'lucide-react';
+
+const App = () => {
+  const [openSection, setOpenSection] = useState(0);
+
+  // Paleta de colores institucionales (aproximada basada en el logo)
+  const colors = {
+    primary: '#9A213B', // Granate Alcaste
+    secondary: '#EAA91D', // Dorado/Amarillo
+    light: '#FDF8F9',
+    text: '#333333'
+  };
+
+  const misaData = [
+    {
+      id: 0,
+      title: "Ritos iniciales",
+      icon: <Users size={28} color={colors.primary} />,
+      description: "Jesús nos convoca como Pueblo de Dios. Sale a nuestro encuentro para celebrar su Pasión, Muerte y Resurrección.",
+      items: [
+        { name: "Acto penitencial", icon: <Heart size={18} />, desc: "Nos preparamos para nuestro encuentro con Jesús." },
+        { name: "Canto del Gloria", icon: <Music size={18} />, desc: "Alabamos a Dios con alegría en este encuentro." },
+        { name: "Oración colecta", icon: <MessageCircle size={18} />, desc: "Nos unimos en oración al comienzo de la celebración." }
+      ]
+    },
+    {
+      id: 1,
+      title: "Liturgia de la Palabra",
+      icon: <BookOpen size={28} color={colors.primary} />,
+      description: "Jesús nos habla en su Palabra. Es Jesús mismo quien nos habla y nos cuenta lo que Dios hace por nosotros.",
+      items: [
+        { name: "Lecturas", icon: <BookOpen size={18} />, desc: "Se leen uno o dos pasajes del Antiguo o del Nuevo Testamento." },
+        { name: "Evangelio", icon: <Sun size={18} />, desc: "El sacerdote proclama un pasaje. Jesús nos explica las Escrituras como a los discípulos de Emaús." },
+        { name: "Homilía", icon: <MessageCircle size={18} />, desc: "El sacerdote nos ayuda a comprender la Palabra de Dios y aplicarla a nuestra vida." },
+        { name: "Credo", icon: <Users size={18} />, desc: "Respondemos a lo que Jesús nos acaba de decir en su Palabra proclamando nuestra fe." },
+        { name: "Oración universal", icon: <Heart size={18} />, desc: "Rezamos por las necesidades de la Iglesia y del mundo entero." }
+      ]
+    },
+    {
+      id: 2,
+      title: "Liturgia Eucarística",
+      icon: <Wine size={28} color={colors.primary} />,
+      description: "El sacerdote repite los gestos y palabras de Jesús en la Última Cena. En realidad, es Jesús mismo quien los hace a través del sacerdote.",
+      items: [
+        { name: "Presentación de las ofrendas", icon: <ArrowRight size={18} />, desc: "Jesús toma el pan y el vino. Se presentan y se bendice a Dios por esos dones." },
+        { 
+          name: "Plegaria Eucarística", 
+          icon: <Sparkles size={18} />, 
+          desc: "Jesús bendice a Dios Padre y le da gracias. Es la gran oración de adoración, alabanza y acción de gracias a Dios Padre.",
+          subitem: {
+            name: "Consagración",
+            desc: "El sacerdote dice las palabras de Jesús en su nombre, y el pan y el vino se transforman en el Cuerpo y la Sangre de Cristo. Este misterio se llama transustanciación."
+          }
+        },
+        { name: "Comunión", icon: <Users size={18} />, desc: "Jesús parte para nosotros el Pan de Vida. Es el alimento que nos da la Vida eterna y hace que formemos un solo Cuerpo con nuestros hermanos en la fe." }
+      ]
+    },
+    {
+      id: 3,
+      title: "Rito de despedida",
+      icon: <Send size={28} color={colors.primary} />,
+      description: "Jesús nos envía a anunciar el Evangelio.",
+      items: [
+        { name: "Envío a anunciar el Evangelio", icon: <Send size={18} />, desc: "Al terminar la Misa, recibimos el encargo de llevar la Buena Noticia a todas las personas." }
+      ]
+    }
+  ];
+
+  const toggleSection = (id) => {
+    setOpenSection(openSection === id ? null : id);
+  };
+
+  return (
+    <div className="min-h-screen bg-[#FDF8F9] font-sans pb-12">
+      {/* Header Institucional */}
+      <header className="bg-white shadow-md border-b-4" style={{ borderColor: colors.primary }}>
+        <div className="max-w-4xl mx-auto px-6 py-4 flex flex-col sm:flex-row items-center justify-between">
+          <div className="flex items-center mb-4 sm:mb-0">
+            {/* Logo actualizado según indicación */}
+            <img 
+              src="Imagotipo Alcaste-LasFuentes I COAS pequeño 150.png" 
+              alt="Logo Alcaste-Las Fuentes" 
+              className="h-16 object-contain"
+              onError={(e) => {
+                e.target.style.display = 'none';
+                document.getElementById('fallback-logo').style.display = 'flex';
+              }}
+            />
+            <div id="fallback-logo" className="hidden items-center">
+               <div className="w-12 h-12 rounded-tl-xl flex items-center justify-center mr-3" style={{ backgroundColor: colors.primary }}>
+                  <Sun color={colors.secondary} size={28} />
+               </div>
+               <div className="flex flex-col">
+                 <span className="font-bold text-xl tracking-wider" style={{ color: colors.primary }}>ALCASTE -</span>
+                 <span className="font-bold text-xl tracking-wider" style={{ color: colors.primary }}>LAS FUENTES</span>
+               </div>
+            </div>
+          </div>
+          <h1 className="text-3xl md:text-4xl font-serif font-bold text-center sm:text-right" style={{ color: colors.primary }}>
+            La Santa Misa
+          </h1>
+        </div>
+      </header>
+
+      {/* Contenido Principal */}
+      <main className="max-w-3xl mx-auto px-4 mt-8">
+        <p className="text-center text-gray-600 mb-10 text-lg">
+          Conoce las partes fundamentales de la celebración Eucarística. 
+          Haz clic en cada sección para desplegar sus elementos.
+        </p>
+
+        <div className="space-y-6">
+          {misaData.map((section, index) => (
+            <div 
+              key={section.id} 
+              className="bg-white rounded-2xl shadow-lg overflow-hidden transition-all duration-300 border border-gray-100"
+            >
+              {/* Acordeón Header */}
+              <button 
+                onClick={() => toggleSection(section.id)}
+                className="w-full px-6 py-5 flex items-center justify-between hover:bg-gray-50 transition-colors focus:outline-none"
+              >
+                <div className="flex items-center gap-4">
+                  <div className="p-3 rounded-full" style={{ backgroundColor: `${colors.secondary}20` }}>
+                    {section.icon}
+                  </div>
+                  <div className="text-left">
+                    <h2 className="text-2xl font-bold font-serif" style={{ color: colors.primary }}>
+                      {section.title}
+                    </h2>
+                    <p className="text-sm text-gray-500 hidden sm:block mt-1">
+                      {section.description}
+                    </p>
+                  </div>
+                </div>
+                <div>
+                  {openSection === section.id ? 
+                    <ChevronUp size={28} style={{ color: colors.secondary }} /> : 
+                    <ChevronDown size={28} style={{ color: colors.secondary }} />
+                  }
+                </div>
+              </button>
+
+              {/* Acordeón Body (Elementos del esquema) */}
+              <div 
+                className={`transition-all duration-500 ease-in-out ${
+                  openSection === section.id ? 'max-h-[800px] opacity-100' : 'max-h-0 opacity-0'
+                } overflow-hidden`}
+              >
+                <div className="px-6 pb-6 pt-2 border-t border-gray-100 bg-gray-50">
+                  <ul className="space-y-4 mt-4">
+                    {section.items.map((item, idx) => (
+                      <li key={idx} className="relative">
+                        
+                        {/* Línea conectora para estilo esquema */}
+                        {idx !== section.items.length - 1 && (
+                           <div className="absolute left-5 top-10 bottom-[-20px] w-0.5 bg-gray-200 z-0"></div>
+                        )}
+
+                        <div className="flex items-start gap-4 relative z-10">
+                          <div 
+                            className="mt-1 flex items-center justify-center w-10 h-10 rounded-full bg-white shadow border-2"
+                            style={{ borderColor: colors.secondary, color: colors.primary }}
+                          >
+                            {item.icon}
+                          </div>
+                          <div className="flex-1 bg-white p-4 rounded-xl shadow-sm border border-gray-100">
+                            <h3 className="font-bold text-lg text-gray-800">{item.name}</h3>
+                            <p className="text-gray-600 text-sm mt-1">{item.desc}</p>
+                            
+                            {/* Sub-elemento especial: Consagración (según el esquema) */}
+                            {item.subitem && (
+                              <div className="mt-4 ml-2 pl-4 border-l-4 py-1" style={{ borderLeftColor: colors.secondary }}>
+                                <div className="flex items-center gap-2 mb-1">
+                                  <Sparkles size={16} style={{ color: colors.secondary }} />
+                                  <h4 className="font-bold" style={{ color: colors.primary }}>
+                                    {item.subitem.name}
+                                  </h4>
+                                </div>
+                                <p className="text-sm text-gray-600">
+                                  {item.subitem.desc}
+                                </p>
+                              </div>
+                            )}
+                          </div>
+                        </div>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              </div>
+            </div>
+          ))}
+        </div>
+        
+        <div className="mt-12 text-center text-sm text-gray-400">
+          <p>Esquema visual interactivo • Colegio Alcaste-Las Fuentes</p>
+        </div>
+      </main>
+    </div>
+  );
+};
+
+export default App;
