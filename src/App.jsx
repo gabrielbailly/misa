@@ -23,7 +23,9 @@ import {
   ScrollText
 } from 'lucide-react';
 
-const asset = (path) => encodeURI(path);
+// Ajuste para GitHub Pages
+const BASE_URL = import.meta.env.BASE_URL || '/';
+const asset = (path) => encodeURI(BASE_URL + path.replace(/^\//, ''));
 
 // --- Estructura de Oraciones ---
 const prayers = {
@@ -53,19 +55,6 @@ const prayers = {
     { role: 'Todos', text: 'Padre nuestro, que estás en el cielo, santificado sea tu Nombre; venga a nosotros tu reino; hágase tu voluntad en la tierra como en el cielo. Danos hoy nuestro pan de cada día; perdona nuestras ofensas, como también nosotros perdonamos a los que nos ofenden; no nos dejes caer en la tentación, y líbranos del mal. Amén.' }
   ]
 };
-
-const introInfo = [
-  'Tanto amó Dios al mundo que entregó a su Hijo único para que no perezca ninguno de los que creen en él, sino que tengan vida eterna (San Juan 3, 16).',
-  'Esto es lo que ocurre en cada Misa que se celebra: Jesús se entrega por amor a todos los hombres.',
-  'Es la mayor muestra de amor: dar la vida por los demás.',
-  'Así nos demostró y nos demuestra su amor Dios Padre.',
-  'Pero para entender mejor lo que significa la Misa, tenemos que detenernos en cada una de sus partes. Y conocer lo que ocurre y qué sentido tiene.',
-  'Así la podremos vivir mejor, con más intensidad, con más atención. Y obtendremos más gracias, más ayudas de Dios para nuestra vida.',
-  'En este libro podrás seguir las diversas partes de la celebración eucarística mediante los textos y los fragmentos de vídeo.',
-  'Estos fragmentos nos presentan a 3 personajes: una madre que ha perdido a su marido, un conductor de autobús padre de un hijo gravemente enfermo y una anciana. Todos ellos acuden a la Misa para pedir ayuda a Dios. Al principio no están seguros pero poco a poco van descubriendo que la Misa es el mejor regalo que Dios nos ha dejado a los hombres. En ella obtenemos todas las gracias que necesitamos para nosotros y nuestros seres queridos.',
-  'Cristo vive, está presente en su Iglesia en esa entrega diaria de la sagrada Eucaristía.',
-  'Es la mejor muestra de que Tanto amó Dios al mundo…',
-];
 
 const cardActivities = {
   'Introito y acto penitencial': {
@@ -160,22 +149,6 @@ function PrayerModal({ prayerTitle, prayerLines, onClose }) {
   );
 }
 
-function InfoModal({ onClose }) {
-  return (
-    <div className="modal-overlay" onClick={onClose}>
-      <div className="modal-content info-modal" onClick={e => e.stopPropagation()}>
-        <button className="modal-close" onClick={onClose}><X /></button>
-        <h2 className="modal-title">Tanto amó Dios al mundo</h2>
-        <div className="intro-info-text">
-          {introInfo.map((paragraph, index) => (
-            <p key={index}>{paragraph}</p>
-          ))}
-        </div>
-      </div>
-    </div>
-  );
-}
-
 function CardActivities({ card }) {
   const [answer, setAnswer] = useState('');
   const [summary, setSummary] = useState('');
@@ -222,11 +195,13 @@ function LessonCard({ card, current, total, onOpenPrayer }) {
         )}
       </div>
       <div className="lesson-media-column">
-        {card.video && (
+        {card.video ? (
           <div className="video-card lesson-video">
             <div className="video-title"><PlayCircle size={20} /> Vídeo</div>
             <video src={card.video} controls preload="metadata" />
           </div>
+        ) : (
+          <div className="no-video-card"><MessageCircle size={30} /> <strong>Sin vídeo</strong></div>
         )}
         <div className="remember-box">
           <CheckCircle2 size={18} /> <strong>Recuerda:</strong> {card.remember}
@@ -323,14 +298,12 @@ export default function App() {
   const [openSection, setOpenSection] = useState(0);
   const [prayerModal, setPrayerModal] = useState(null);
   const [showCover, setShowCover] = useState(true);
-  const [showInfo, setShowInfo] = useState(false);
 
   return (
     <div className="page-shell">
       {prayerModal && (
         <PrayerModal prayerTitle={prayerModal} prayerLines={prayers[prayerModal]} onClose={() => setPrayerModal(null)} />
       )}
-      {showInfo && <InfoModal onClose={() => setShowInfo(false)} />}
       {showCover ? (
         <header className="hero cover-hero">
           <nav className="cover-topbar">
@@ -342,7 +315,7 @@ export default function App() {
             <h1>Tanto amó Dios al mundo (Jn 3, 16)</h1>
             <p className="hero-copy cover-copy">Recorre las partes de la Misa.</p>
             <button className="primary-button cover-start" onClick={() => setShowCover(false)}>Empezar</button>
-            <button className="cover-info" type="button" onClick={() => setShowInfo(true)}>Más información</button>
+            <button className="cover-info" type="button">Más información</button>
             <span className="cover-line" />
           </div>
         </header>
