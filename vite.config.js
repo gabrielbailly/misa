@@ -17,22 +17,21 @@ function localMediaPlugin() {
     configureServer(server) {
       server.middlewares.use((req, res, next) => {
         const pathname = decodeURIComponent((req.url || '').split('?')[0]);
-        if (pathname === '/logo colegio.png') {
+        if (pathname === '/logo colegio.png' || pathname === '/misa/logo colegio.png') {
           const logoPath = path.join(process.cwd(), 'logo colegio.png');
           res.setHeader('Content-Type', 'image/png');
           fs.createReadStream(logoPath).pipe(res);
           return;
         }
 
-        const mediaDir = mediaDirs.find((dir) => pathname.startsWith(`/${dir}/`));
-
+        const mediaDir = mediaDirs.find((dir) => pathname.includes(`/${dir}/`));
         if (!mediaDir) {
           next();
           return;
         }
 
-        const filePath = path.join(process.cwd(), pathname.slice(1));
-        if (!filePath.startsWith(path.join(process.cwd(), mediaDir)) || !fs.existsSync(filePath)) {
+        const filePath = path.join(process.cwd(), pathname.split('/').slice(2).join('/'));
+        if (!fs.existsSync(filePath)) {
           next();
           return;
         }
@@ -63,5 +62,6 @@ function localMediaPlugin() {
 }
 
 export default defineConfig({
+  base: '/misa/',
   plugins: [react(), localMediaPlugin()],
 });
