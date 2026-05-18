@@ -13,3 +13,5 @@
 @media (min-width: 821px) and (max-width: 1180px){.lesson-card{grid-template-columns:minmax(14rem,.9fr) minmax(18rem,1.1fr)!important}.lesson-media-column{grid-column:1 / -1!important;width:100%!important}.video-card video{width:100%;max-height:none}.lesson-video{width:100%}.remember-box{width:100%}}
 
 @media (min-width: 821px) and (max-width: 1400px){.lesson-card{grid-template-columns:minmax(14rem,.9fr) minmax(18rem,1.1fr)!important}.lesson-media-column{grid-column:1 / -1!important;width:100%!important;max-width:none!important}.video-card,.lesson-video{width:100%!important}.video-card video{width:100%!important;max-height:none!important}.remember-box{width:100%!important}}
+
+.cover-links{align-items:center;display:flex;gap:2.2rem;justify-content:center;margin-top:2.4rem}.cover-links .cover-info{margin-top:0}.cover-line{display:none!important}.app-info-text p:first-child{background:transparent;border-left:0;color:#4f3c44;font-family:Inter,ui-sans-serif,system-ui,sans-serif;font-size:1.05rem;font-weight:400;padding:0}.app-info-text p:last-child{text-align:left}

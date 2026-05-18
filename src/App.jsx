@@ -69,6 +69,13 @@ const prologue = [
   'Es la mejor muestra de que Tanto amó Dios al mundo…',
 ];
 
+const appInfo = [
+  'Web interactiva desarrollada por Gabriel Bailly-Bailliere Torres-Pardo, profesor del colegio Alcaste- Las Fuentes (La Rioja, España).',
+  'Es una web sin ánimo de lucro.',
+  'Los contenidos gráficos y audiovisuales no son propiedad del autor.',
+  'Mayo 2026',
+];
+
 const cardActivities = {
   'Introito y acto penitencial': {
     question: '¿Qué pido a Dios al comenzar la Misa?',
@@ -176,6 +183,20 @@ function PrologueModal({ onClose }) {
         <h2 className="modal-title">Prólogo</h2>
         <div className="prologue-text">
           {prologue.map((paragraph, index) => <p key={index}>{paragraph}</p>)}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function AppInfoModal({ onClose }) {
+  return (
+    <div className="modal-overlay" onClick={onClose}>
+      <div className="modal-content prologue-modal" onClick={e => e.stopPropagation()}>
+        <button className="modal-close" onClick={onClose}><X /></button>
+        <h2 className="modal-title">Más información</h2>
+        <div className="prologue-text app-info-text">
+          {appInfo.map((paragraph, index) => <p key={index}>{paragraph}</p>)}
         </div>
       </div>
     </div>
@@ -330,6 +351,7 @@ export default function App() {
   const [prayerModal, setPrayerModal] = useState(null);
   const [showCover, setShowCover] = useState(true);
   const [showPrologue, setShowPrologue] = useState(false);
+  const [showAppInfo, setShowAppInfo] = useState(false);
 
   return (
     <div className="page-shell">
@@ -337,6 +359,7 @@ export default function App() {
         <PrayerModal prayerTitle={prayerModal} prayerLines={prayers[prayerModal]} onClose={() => setPrayerModal(null)} />
       )}
       {showPrologue && <PrologueModal onClose={() => setShowPrologue(false)} />}
+      {showAppInfo && <AppInfoModal onClose={() => setShowAppInfo(false)} />}
       {showCover ? (
         <header className="hero cover-hero">
           <nav className="cover-topbar">
@@ -346,10 +369,12 @@ export default function App() {
             <img src={asset('/fotos/El_cristo_de_san_juan_de_la_cruz.jpg')} alt="Cristo" className="cover-image" />
             <h1>Tanto amó Dios al mundo</h1>
             <p className="cover-citation">(Jn 3, 16)</p>
-            <p className="hero-copy cover-copy">Recorre las partes de la Misa.</p>
+            <p className="hero-copy cover-copy">Descubre lo que sucede en la Misa.</p>
             <button className="primary-button cover-start" onClick={() => setShowCover(false)}>Empezar</button>
-            <button className="cover-info" type="button" onClick={() => setShowPrologue(true)}>Más información</button>
-            <span className="cover-line" />
+            <div className="cover-links">
+              <button className="cover-info" type="button" onClick={() => setShowPrologue(true)}>Prólogo</button>
+              <button className="cover-info" type="button" onClick={() => setShowAppInfo(true)}>Más información</button>
+            </div>
           </div>
         </header>
       ) : (
