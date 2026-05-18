@@ -380,7 +380,9 @@ export default function App() {
       ) : (
       <main className="app-main">
         <section className="content-section" id="partes">
-          <button className="back-home-button" type="button" onClick={() => setShowCover(true)}>Volver al inicio</button>
+          <div className="content-actions">
+            <button className="back-home-button primary-button" type="button" onClick={() => setShowCover(true)}>Volver al inicio</button>
+          </div>
           <h2 className="eucaristia-heading">La celebración de la Eucaristía</h2>
           <div className="celebration-intro">
             {celebrationIntro.map((paragraph, index) => <p key={index}>{paragraph}</p>)}
