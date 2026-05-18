@@ -25,7 +25,7 @@ import {
 
 // Ajuste para GitHub Pages
 const BASE_URL = import.meta.env.BASE_URL || '/';
-const asset = (path) => encodeURI(BASE_URL + path.replace(/^\//, ''));
+const asset = (path) => encodeURI(BASE_URL + path.replace(/^\//, '').normalize('NFC'));
 
 // --- Estructura de Oraciones ---
 const prayers = {
@@ -228,13 +228,11 @@ function LessonCard({ card, current, total, onOpenPrayer }) {
         )}
       </div>
       <div className="lesson-media-column">
-        {card.video ? (
+        {card.video && (
           <div className="video-card lesson-video">
             <div className="video-title"><PlayCircle size={20} /> Vídeo</div>
             <video src={card.video} controls preload="metadata" />
           </div>
-        ) : (
-          <div className="no-video-card"><MessageCircle size={30} /> <strong>Sin vídeo</strong></div>
         )}
         <div className="remember-box">
           <CheckCircle2 size={18} /> <strong>Recuerda:</strong> {card.remember}
