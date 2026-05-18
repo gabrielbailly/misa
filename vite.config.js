@@ -3,7 +3,7 @@ import path from 'node:path';
 import { defineConfig } from 'vite';
 import react from '@vitejs/plugin-react';
 
-const mediaDirs = ['fotos', 'fotogramas', 'vídeos'];
+const mediaDirs = ['fotos', 'fotogramas', 'videos'];
 const mimeTypes = {
   '.jpg': 'image/jpeg',
   '.jpeg': 'image/jpeg',

@@ -252,8 +252,8 @@ const misaData = [
     icon: Users,
     description: 'Jesús nos reúne.',
     cards: [
-      { title: 'Introito y acto penitencial', icon: Heart, image: asset('/fotos/entrada.jpg'), video: asset('/vídeos/1. Introito y acto penitencial.mp4'), text: 'Entramos en la celebración.', remember: 'Jesús me invita y me perdona.', prayer: 'Yo confieso' },
-      { title: 'Gloria', icon: Music, image: asset('/fotos/iglesia-llena.jpg'), video: asset('/vídeos/2. Gloria.mp4'), text: 'Alabamos a Dios.', remember: 'La Misa empieza con alegría.', prayer: 'Gloria' },
+      { title: 'Introito y acto penitencial', icon: Heart, image: asset('/fotos/entrada.jpg'), video: asset('/videos/1. Introito y acto penitencial.mp4'), text: 'Entramos en la celebración.', remember: 'Jesús me invita y me perdona.', prayer: 'Yo confieso' },
+      { title: 'Gloria', icon: Music, image: asset('/fotos/iglesia-llena.jpg'), video: asset('/videos/2. Gloria.mp4'), text: 'Alabamos a Dios.', remember: 'La Misa empieza con alegría.', prayer: 'Gloria' },
       { title: 'Oración colecta', icon: MessageCircle, image: asset('/fotos/misal.jpg'), text: 'El sacerdote recoge la oración.', remember: 'Rezo unido a la Iglesia.' }
     ]
   },
@@ -263,9 +263,9 @@ const misaData = [
     icon: BookOpen,
     description: 'Jesús nos habla.',
     cards: [
-      { title: 'Lecturas', icon: BookOpen, image: asset('/fotos/liturgia palabra.jpg'), video: asset('/vídeos/4. Lecturas.mp4'), text: 'Escuchamos la Biblia.', remember: 'Escuchar es rezar.' },
-      { title: 'Evangelio y homilía', icon: Sun, image: asset('/fotos/Evangelio.jpg'), video: asset('/vídeos/5. Homilía.mp4'), text: 'Palabras de Jesús.', remember: 'Jesús me habla.' },
-      { title: 'Credo y Oración universal', icon: Heart, image: asset('/fotos/niño_de_rodillas.jpg'), video: asset('/vídeos/9. Petición.mp4'), text: 'Rezamos por todos.', remember: 'Rezamos unidos.', prayer: 'Credo' }
+      { title: 'Lecturas', icon: BookOpen, image: asset('/fotos/liturgia palabra.jpg'), video: asset('/videos/4. Lecturas.mp4'), text: 'Escuchamos la Biblia.', remember: 'Escuchar es rezar.' },
+      { title: 'Evangelio y homilía', icon: Sun, image: asset('/fotos/Evangelio.jpg'), video: asset('/videos/5. Homilía.mp4'), text: 'Palabras de Jesús.', remember: 'Jesús me habla.' },
+      { title: 'Credo y Oración universal', icon: Heart, image: asset('/fotos/niño_de_rodillas.jpg'), video: asset('/videos/9. Petición.mp4'), text: 'Rezamos por todos.', remember: 'Rezamos unidos.', prayer: 'Credo' }
     ]
   },
   {
@@ -274,13 +274,13 @@ const misaData = [
     icon: Wine,
     description: 'Jesús se hace presente.',
     cards: [
-      { title: 'Presentación de las ofrendas', icon: ArrowRight, image: asset('/fotos/Ofrendas.jpg'), video: asset('/vídeos/6. Ofertorio.mp4'), text: 'Se presentan el pan y el vino.', remember: 'Ofrezco mi día.', prayer: 'Bendito seas' },
-      { title: 'Plegaria Eucarística', icon: Sparkles, image: asset('/fotos/cáliz.jpg'), video: asset('/vídeos/7. Santo.mp4'), text: 'Acción de gracias.', remember: 'Dios es santo.', prayer: 'Santo' },
-      { title: 'Consagración', icon: Wine, image: asset('/fotos/copon.jpg'), video: asset('/vídeos/10. Plegaria eucarística.mp4'), text: 'Transformación.', remember: 'Jesús está presente.', prayer: 'Palabras de la consagración' },
-      { title: 'Santos y almas del purgatorio', icon: Users, image: asset('/fotos/interior iglesia.jpg'), video: asset('/vídeos/8. Santos y almas del purgatorio.mp4'), text: 'Unidos a los santos.', remember: 'Gran familia.' },
-      { title: 'Padre nuestro', icon: MessageCircle, image: asset('/fotos/dando la mano.jpg'), video: asset('/vídeos/11. Padrenuestro y rito comunión.mp4'), text: 'Oración de Jesús.', remember: 'Dios es Padre.', prayer: 'Padrenuestro' },
-      { title: 'Comunión', icon: Wine, image: asset('/fotos/comunión.jpg'), video: asset('/vídeos/12. Comunión.mp4'), text: 'Recibimos a Jesús.', remember: 'Jesús viene a mí.' },
-      { title: 'Acción de gracias', icon: Trophy, image: asset('/fotos/papa_caliz.jpg'), video: asset('/vídeos/14. Acción de gracias.mp4'), text: 'Damos gracias.', remember: 'Dar gracias es bueno.' }
+      { title: 'Presentación de las ofrendas', icon: ArrowRight, image: asset('/fotos/Ofrendas.jpg'), video: asset('/videos/6. Ofertorio.mp4'), text: 'Se presentan el pan y el vino.', remember: 'Ofrezco mi día.', prayer: 'Bendito seas' },
+      { title: 'Plegaria Eucarística', icon: Sparkles, image: asset('/fotos/cáliz.jpg'), video: asset('/videos/7. Santo.mp4'), text: 'Acción de gracias.', remember: 'Dios es santo.', prayer: 'Santo' },
+      { title: 'Consagración', icon: Wine, image: asset('/fotos/copon.jpg'), video: asset('/videos/10. Plegaria eucarística.mp4'), text: 'Transformación.', remember: 'Jesús está presente.', prayer: 'Palabras de la consagración' },
+      { title: 'Santos y almas del purgatorio', icon: Users, image: asset('/fotos/interior iglesia.jpg'), video: asset('/videos/8. Santos y almas del purgatorio.mp4'), text: 'Unidos a los santos.', remember: 'Gran familia.' },
+      { title: 'Padre nuestro', icon: MessageCircle, image: asset('/fotos/dando la mano.jpg'), video: asset('/videos/11. Padrenuestro y rito comunión.mp4'), text: 'Oración de Jesús.', remember: 'Dios es Padre.', prayer: 'Padrenuestro' },
+      { title: 'Comunión', icon: Wine, image: asset('/fotos/comunión.jpg'), video: asset('/videos/12. Comunión.mp4'), text: 'Recibimos a Jesús.', remember: 'Jesús viene a mí.' },
+      { title: 'Acción de gracias', icon: Trophy, image: asset('/fotos/papa_caliz.jpg'), video: asset('/videos/14. Acción de gracias.mp4'), text: 'Damos gracias.', remember: 'Dar gracias es bueno.' }
     ]
   },
   {
@@ -289,7 +289,7 @@ const misaData = [
     icon: Send,
     description: 'Jesús nos envía.',
     cards: [
-      { title: 'Oración y bendición final', icon: Send, image: asset('/fotos/bendición.jpg'), video: asset('/vídeos/13. Oración y bendición final.mp4'), text: 'Somos enviados.', remember: 'Salgo para amar.' }
+      { title: 'Oración y bendición final', icon: Send, image: asset('/fotos/bendición.jpg'), video: asset('/videos/13. Oración y bendición final.mp4'), text: 'Somos enviados.', remember: 'Salgo para amar.' }
     ]
   }
 ];
