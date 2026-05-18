@@ -56,6 +56,19 @@ const prayers = {
   ]
 };
 
+const prologue = [
+  'Tanto amó Dios al mundo que entregó a su Hijo único para que no perezca ninguno de los que creen en él, sino que tengan vida eterna (San Juan 3, 16).',
+  'Esto es lo que ocurre en cada Misa que se celebra: Jesús se entrega por amor a todos los hombres.',
+  'Es la mayor muestra de amor: dar la vida por los demás.',
+  'Así nos demostró y nos demuestra su amor Dios Padre.',
+  'Pero para entender mejor lo que significa la Misa, tenemos que detenernos en cada una de sus partes. Y conocer lo que ocurre y qué sentido tiene.',
+  'Así la podremos vivir mejor, con más intensidad, con más atención. Y obtendremos más gracias, más ayudas de Dios para nuestra vida.',
+  'En este libro podrás seguir las diversas partes de la celebración eucarística mediante los textos y los fragmentos de vídeo.',
+  'Estos fragmentos nos presentan a 3 personajes: una madre que ha perdido a su marido, un conductor de autobús padre de un hijo gravemente enfermo y una anciana. Todos ellos acuden a la Misa para pedir ayuda a Dios. Al principio no están seguros pero poco a poco van descubriendo que la Misa es el mejor regalo que Dios nos ha dejado a los hombres. En ella obtenemos todas las gracias que necesitamos para nosotros y nuestros seres queridos.',
+  'Cristo vive, está presente en su Iglesia en esa entrega diaria de la sagrada Eucaristía.',
+  'Es la mejor muestra de que Tanto amó Dios al mundo…',
+];
+
 const cardActivities = {
   'Introito y acto penitencial': {
     question: '¿Qué pido a Dios al comenzar la Misa?',
@@ -143,6 +156,20 @@ function PrayerModal({ prayerTitle, prayerLines, onClose }) {
               {line.role && <strong className="prayer-role">{line.role}:</strong>} {line.text}
             </p>
           ))}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function PrologueModal({ onClose }) {
+  return (
+    <div className="modal-overlay" onClick={onClose}>
+      <div className="modal-content prologue-modal" onClick={e => e.stopPropagation()}>
+        <button className="modal-close" onClick={onClose}><X /></button>
+        <h2 className="modal-title">Prólogo</h2>
+        <div className="prologue-text">
+          {prologue.map((paragraph, index) => <p key={index}>{paragraph}</p>)}
         </div>
       </div>
     </div>
@@ -298,12 +325,14 @@ export default function App() {
   const [openSection, setOpenSection] = useState(0);
   const [prayerModal, setPrayerModal] = useState(null);
   const [showCover, setShowCover] = useState(true);
+  const [showPrologue, setShowPrologue] = useState(false);
 
   return (
     <div className="page-shell">
       {prayerModal && (
         <PrayerModal prayerTitle={prayerModal} prayerLines={prayers[prayerModal]} onClose={() => setPrayerModal(null)} />
       )}
+      {showPrologue && <PrologueModal onClose={() => setShowPrologue(false)} />}
       {showCover ? (
         <header className="hero cover-hero">
           <nav className="cover-topbar">
@@ -315,13 +344,14 @@ export default function App() {
             <h1>Tanto amó Dios al mundo (Jn 3, 16)</h1>
             <p className="hero-copy cover-copy">Recorre las partes de la Misa.</p>
             <button className="primary-button cover-start" onClick={() => setShowCover(false)}>Empezar</button>
-            <button className="cover-info" type="button">Más información</button>
+            <button className="cover-info" type="button" onClick={() => setShowPrologue(true)}>Más información</button>
             <span className="cover-line" />
           </div>
         </header>
       ) : (
       <main className="app-main">
         <section className="content-section" id="partes">
+          <button className="back-home-button" type="button" onClick={() => setShowCover(true)}>Volver al inicio</button>
           <h2 className="eucaristia-heading">La celebración de la Eucaristía</h2>
           <div className="sections-list">
             {misaData.map((section) => (
