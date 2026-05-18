@@ -142,6 +142,12 @@ const cardActivities = {
   },
 };
 
+const celebrationIntro = [
+  'El domingo es el Día del Señor. En la Misa, Jesús sale a nuestro encuentro y nos reúne para celebrar su Pasión, Muerte y Resurrección.',
+  'La Iglesia celebra la Misa cada día, pero el domingo es el día en que resucitó Jesús y todos nos reunimos para celebrarlo en el sacramento de la Eucaristía.',
+  'La Misa tiene dos momentos principales, la Liturgia de la Palabra y la Liturgia Eucarística, con unos ritos iniciales y un rito de despedida.',
+];
+
 // --- Componentes ---
 
 function PrayerModal({ prayerTitle, prayerLines, onClose }) {
@@ -277,46 +283,46 @@ const misaData = [
     id: 0,
     title: 'Ritos iniciales',
     icon: Users,
-    description: 'Jesús nos reúne.',
+    description: 'Jesús nos convoca como Pueblo de Dios.',
     cards: [
-      { title: 'Introito y acto penitencial', icon: Heart, image: asset('/fotos/entrada.jpg'), video: asset('/videos/1. Introito y acto penitencial.mp4'), text: 'Entramos en la celebración.', remember: 'Jesús me invita y me perdona.', prayer: 'Yo confieso' },
-      { title: 'Gloria', icon: Music, image: asset('/fotos/iglesia-llena.jpg'), video: asset('/videos/2. Gloria.mp4'), text: 'Alabamos a Dios.', remember: 'La Misa empieza con alegría.', prayer: 'Gloria' },
-      { title: 'Oración colecta', icon: MessageCircle, image: asset('/fotos/misal.jpg'), text: 'El sacerdote recoge la oración.', remember: 'Rezo unido a la Iglesia.' }
+      { title: 'Introito y acto penitencial', icon: Heart, image: asset('/fotos/entrada.jpg'), video: asset('/videos/1. Introito y acto penitencial.mp4'), text: 'Jesús sale a nuestro encuentro y nos reúne para celebrar su Pasión, Muerte y Resurrección. Nos preparamos para nuestro encuentro con Jesús con el acto penitencial.', remember: 'Jesús nos convoca como Pueblo de Dios.', prayer: 'Yo confieso' },
+      { title: 'Gloria', icon: Music, image: asset('/fotos/iglesia-llena.jpg'), video: asset('/videos/2. Gloria.mp4'), text: 'En los ritos iniciales alabamos a Dios con el canto del Gloria. Es una oración de alegría porque celebramos la gran fiesta de Jesús.', remember: 'Alabamos a Dios con alegría.', prayer: 'Gloria' },
+      { title: 'Oración colecta', icon: MessageCircle, image: asset('/fotos/misal.jpg'), text: 'La oración colecta recoge la oración de toda la Iglesia al comenzar la celebración. Nos unimos para presentar a Dios nuestra oración.', remember: 'Rezamos unidos como Iglesia.' }
     ]
   },
   {
     id: 1,
     title: 'Liturgia de la Palabra',
     icon: BookOpen,
-    description: 'Jesús nos habla.',
+    description: 'Jesús nos habla en su Palabra.',
     cards: [
-      { title: 'Lecturas', icon: BookOpen, image: asset('/fotos/liturgia palabra.jpg'), video: asset('/videos/4. Lecturas.mp4'), text: 'Escuchamos la Biblia.', remember: 'Escuchar es rezar.' },
-      { title: 'Evangelio y homilía', icon: Sun, image: asset('/fotos/Evangelio.jpg'), video: asset('/videos/5. Homilía.mp4'), text: 'Palabras de Jesús.', remember: 'Jesús me habla.' },
-      { title: 'Credo y Oración universal', icon: Heart, image: asset('/fotos/niño_de_rodillas.jpg'), video: asset('/videos/9. Petición.mp4'), text: 'Rezamos por todos.', remember: 'Rezamos unidos.', prayer: 'Credo' }
+      { title: 'Lecturas', icon: BookOpen, image: asset('/fotos/liturgia palabra.jpg'), video: asset('/videos/4. Lecturas.mp4'), text: 'Es Jesús mismo quien nos habla y nos cuenta lo que Dios hace por nosotros. En las lecturas se leen uno o dos pasajes del Antiguo o del Nuevo Testamento.', remember: 'En la Liturgia de la Palabra es Jesús mismo quien nos habla.' },
+      { title: 'Evangelio y homilía', icon: Sun, image: asset('/fotos/Evangelio.jpg'), video: asset('/videos/5. Homilía.mp4'), text: 'En el Evangelio, el sacerdote proclama un pasaje. Jesús nos explica las Escrituras como a los discípulos de Emaús. En la homilía, el sacerdote nos ayuda a comprender la Palabra de Dios y aplicarla a nuestra vida.', remember: 'Jesús nos explica las Escrituras.' },
+      { title: 'Credo y Oración universal', icon: Heart, image: asset('/fotos/niño_de_rodillas.jpg'), video: asset('/videos/9. Petición.mp4'), text: 'En el Credo respondemos a lo que Jesús nos acaba de decir en su Palabra proclamando nuestra fe. En la oración universal rezamos por las necesidades de la Iglesia y del mundo entero.', remember: 'Respondemos con fe y rezamos por todos.', prayer: 'Credo' }
     ]
   },
   {
     id: 2,
     title: 'Liturgia Eucarística',
     icon: Wine,
-    description: 'Jesús se hace presente.',
+    description: 'El sacerdote repite los gestos y palabras de Jesús en la Última Cena.',
     cards: [
-      { title: 'Presentación de las ofrendas', icon: ArrowRight, image: asset('/fotos/Ofrendas.jpg'), video: asset('/videos/6. Ofertorio.mp4'), text: 'Se presentan el pan y el vino.', remember: 'Ofrezco mi día.', prayer: 'Bendito seas' },
-      { title: 'Plegaria Eucarística', icon: Sparkles, image: asset('/fotos/cáliz.jpg'), video: asset('/videos/7. Santo.mp4'), text: 'Acción de gracias.', remember: 'Dios es santo.', prayer: 'Santo' },
-      { title: 'Consagración', icon: Wine, image: asset('/fotos/copon.jpg'), video: asset('/videos/10. Plegaria eucarística.mp4'), text: 'Transformación.', remember: 'Jesús está presente.', prayer: 'Palabras de la consagración' },
-      { title: 'Santos y almas del purgatorio', icon: Users, image: asset('/fotos/interior iglesia.jpg'), video: asset('/videos/8. Santos y almas del purgatorio.mp4'), text: 'Unidos a los santos.', remember: 'Gran familia.' },
-      { title: 'Padre nuestro', icon: MessageCircle, image: asset('/fotos/dando la mano.jpg'), video: asset('/videos/11. Padrenuestro y rito comunión.mp4'), text: 'Oración de Jesús.', remember: 'Dios es Padre.', prayer: 'Padrenuestro' },
-      { title: 'Comunión', icon: Wine, image: asset('/fotos/comunión.jpg'), video: asset('/videos/12. Comunión.mp4'), text: 'Recibimos a Jesús.', remember: 'Jesús viene a mí.' },
-      { title: 'Acción de gracias', icon: Trophy, image: asset('/fotos/papa_caliz.jpg'), video: asset('/videos/14. Acción de gracias.mp4'), text: 'Damos gracias.', remember: 'Dar gracias es bueno.' }
+      { title: 'Presentación de las ofrendas', icon: ArrowRight, image: asset('/fotos/Ofrendas.jpg'), video: asset('/videos/6. Ofertorio.mp4'), text: 'Jesús toma el pan y el vino. Se presentan el pan y el vino y se bendice a Dios por esos dones.', remember: 'Jesús toma el pan y el vino.', prayer: 'Bendito seas' },
+      { title: 'Plegaria Eucarística', icon: Sparkles, image: asset('/fotos/cáliz.jpg'), video: asset('/videos/7. Santo.mp4'), text: 'La Plegaria Eucarística es la gran oración de adoración, alabanza y acción de gracias a Dios Padre que Jesús hace por medio del Espíritu Santo, unido a nosotros, que somos su Cuerpo.', remember: 'Jesús bendice a Dios Padre y le da gracias.', prayer: 'Santo' },
+      { title: 'Consagración', icon: Wine, image: asset('/fotos/copon.jpg'), video: asset('/videos/10. Plegaria eucarística.mp4'), text: 'En la Consagración, el sacerdote dice las palabras de Jesús en su nombre, y el pan y el vino se transforman en el Cuerpo y la Sangre de Cristo. Este misterio se llama transustanciación.', remember: 'Jesús se hace realmente presente.', prayer: 'Palabras de la consagración' },
+      { title: 'Santos y almas del purgatorio', icon: Users, image: asset('/fotos/interior iglesia.jpg'), video: asset('/videos/8. Santos y almas del purgatorio.mp4'), text: 'En la Misa estamos unidos a toda la Iglesia: los santos del cielo, las almas del purgatorio y todos los fieles que peregrinan en la tierra.', remember: 'La Iglesia es una gran familia.' },
+      { title: 'Padre nuestro', icon: MessageCircle, image: asset('/fotos/dando la mano.jpg'), video: asset('/videos/11. Padrenuestro y rito comunión.mp4'), text: 'Rezamos la oración que Jesús nos enseñó y nos preparamos para recibir el Pan de Vida, unidos como hermanos.', remember: 'Dios es Padre y nos une.', prayer: 'Padrenuestro' },
+      { title: 'Comunión', icon: Wine, image: asset('/fotos/comunión.jpg'), video: asset('/videos/12. Comunión.mp4'), text: 'Jesús parte para nosotros el Pan de Vida. Jesús en la Eucaristía es el alimento que nos da la Vida eterna y hace que formemos un solo Cuerpo con nuestros hermanos en la fe.', remember: 'Jesús parte para nosotros el Pan de Vida.' },
+      { title: 'Acción de gracias', icon: Trophy, image: asset('/fotos/papa_caliz.jpg'), video: asset('/videos/14. Acción de gracias.mp4'), text: 'Después de recibir a Jesús, damos gracias por su presencia y por el regalo de la Eucaristía, que nos da la gracia que necesitamos para nuestra vida.', remember: 'Damos gracias a Jesús por quedarse con nosotros.' }
     ]
   },
   {
     id: 3,
     title: 'Rito de despedida',
     icon: Send,
-    description: 'Jesús nos envía.',
+    description: 'Jesús nos envía a anunciar el Evangelio.',
     cards: [
-      { title: 'Oración y bendición final', icon: Send, image: asset('/fotos/bendición.jpg'), video: asset('/videos/13. Oración y bendición final.mp4'), text: 'Somos enviados.', remember: 'Salgo para amar.' }
+      { title: 'Oración y bendición final', icon: Send, image: asset('/fotos/bendición.jpg'), video: asset('/videos/13. Oración y bendición final.mp4'), text: 'Al terminar la Misa, recibimos el encargo de llevar la Buena Noticia a todas las personas.', remember: 'Jesús nos envía a anunciar el Evangelio.' }
     ]
   }
 ];
@@ -353,6 +359,9 @@ export default function App() {
         <section className="content-section" id="partes">
           <button className="back-home-button" type="button" onClick={() => setShowCover(true)}>Volver al inicio</button>
           <h2 className="eucaristia-heading">La celebración de la Eucaristía</h2>
+          <div className="celebration-intro">
+            {celebrationIntro.map((paragraph, index) => <p key={index}>{paragraph}</p>)}
+          </div>
           <div className="sections-list">
             {misaData.map((section) => (
               <SectionCard key={section.id} section={section} isOpen={openSection === section.id} onToggle={() => setOpenSection(openSection === section.id ? null : section.id)} onOpenPrayer={setPrayerModal} />
