@@ -337,11 +337,11 @@ export default function App() {
         <header className="hero cover-hero">
           <nav className="cover-topbar">
             <img src={asset('/logo colegio.png')} alt="Logo" className="school-logo cover-logo" />
-            <button className="cover-menu" aria-label="Menú">☰</button>
           </nav>
           <div className="cover-content">
             <img src={asset('/fotos/El_cristo_de_san_juan_de_la_cruz.jpg')} alt="Cristo" className="cover-image" />
-            <h1>Tanto amó Dios al mundo (Jn 3, 16)</h1>
+            <h1>Tanto amó Dios al mundo</h1>
+            <p className="cover-citation">(Jn 3, 16)</p>
             <p className="hero-copy cover-copy">Recorre las partes de la Misa.</p>
             <button className="primary-button cover-start" onClick={() => setShowCover(false)}>Empezar</button>
             <button className="cover-info" type="button" onClick={() => setShowPrologue(true)}>Más información</button>
