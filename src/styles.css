@@ -17,3 +17,7 @@
 .cover-links{align-items:center;display:flex;gap:2.2rem;justify-content:center;margin-top:2.4rem}.cover-links .cover-info{margin-top:0}.cover-line{display:none!important}.app-info-text p:first-child{background:transparent;border-left:0;color:#4f3c44;font-family:Inter,ui-sans-serif,system-ui,sans-serif;font-size:1.05rem;font-weight:400;padding:0}.app-info-text p:last-child{text-align:left}
 
 .content-actions{display:flex;justify-content:flex-end;margin:0 0 1rem}.back-home-button.primary-button{font-size:.9rem;padding:.65rem 1rem;min-width:auto}.eucaristia-heading{font-size:clamp(1.9rem,4vw,3.4rem)!important;white-space:nowrap}@media (max-width:620px){.eucaristia-heading{white-space:normal}}
+
+.match-list{display:grid;gap:.65rem;margin-top:.75rem}.match-row{align-items:start;background:#fff;border:1px solid #efd2d9;border-radius:.85rem;display:grid;gap:.5rem;grid-template-columns:minmax(8rem,.8fr) 1fr;padding:.75rem}.match-row span{color:#9a213b;font-weight:800}.match-row strong{color:#4f3c44;font-weight:700}.card-specific-activities{grid-template-columns:repeat(auto-fit,minmax(18rem,1fr))}@media (max-width:620px){.match-row{grid-template-columns:1fr}}
+
+.match-options{display:grid;gap:.4rem}

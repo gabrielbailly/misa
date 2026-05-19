@@ -77,76 +77,73 @@ const appInfo = [
 ];
 
 const cardActivities = {
-  'Introito y acto penitencial': {
-    question: '¿Qué pido a Dios al comenzar la Misa?',
-    options: ['Perdón', 'Un regalo', 'Salir pronto'],
-    answer: 'Perdón',
-  },
-  'Gloria': {
-    question: '¿Qué actitud vivimos en el Gloria?',
-    options: ['Alabanza', 'Enfado', 'Silencio'],
-    answer: 'Alabanza',
-  },
-  'Lecturas': {
-    question: 'Cuando escucho las lecturas, Dios me habla...',
-    options: ['hoy', 'nunca', 'sólo los domingos'],
-    answer: 'hoy',
-  },
-  'Evangelio y homilía': {
-    question: '¿Por qué nos ponemos de pie en el Evangelio?',
-    options: ['Porque escuchamos a Jesús', 'Por cansancio', 'Por juego'],
-    answer: 'Porque escuchamos a Jesús',
-  },
-  'Credo y Oración universal': {
-    question: '¿Por quién rezamos en las peticiones?',
-    options: ['Por todos', 'Por nadie', 'Sólo por mí'],
-    answer: 'Por todos',
-  },
-  'Presentación de las ofrendas': {
-    question: '¿Qué presento a Dios?',
-    options: ['Mi vida', 'Nada', 'Un juguete'],
-    answer: 'Mi vida',
-  },
-  'Santo': {
-    question: 'En el Santo alabamos a Dios con...',
-    options: ['toda la Iglesia', 'gritos', 'prisa'],
-    answer: 'toda la Iglesia',
-  },
-  'Santos y almas del purgatorio': {
-    question: '¿Con quién estamos unidos en la Misa?',
-    options: ['Con los santos', 'Con nadie', 'Con los vecinos'],
-    answer: 'Con los santos',
-  },
-  'Plegaria Eucarística': {
-    question: 'La Plegaria es una gran...',
-    options: ['Acción de gracias', 'Charla', 'Petición'],
-    answer: 'Acción de gracias',
-  },
-  'Consagración': {
-    question: 'En la consagración, Jesús está...',
-    options: ['realmente presente', 'lejos', 'ausente'],
-    answer: 'realmente presente',
-  },
-  'Padre nuestro': {
-    question: 'El Padrenuestro nos recuerda que Dios es...',
-    options: ['Padre', 'un amigo', 'un jefe'],
-    answer: 'Padre',
-  },
-  'Comunión': {
-    question: 'En la Comunión recibimos a...',
-    options: ['Jesús', 'pan normal', 'nada'],
-    answer: 'Jesús',
-  },
-  'Acción de gracias': {
-    question: 'Después de comulgar conviene...',
-    options: ['dar gracias', 'irse pronto', 'hablar'],
-    answer: 'dar gracias',
-  },
-  'Oración y bendición final': {
-    question: 'Al final de la Misa somos enviados a...',
-    options: ['amar mejor', 'dormir', 'olvidar'],
-    answer: 'amar mejor',
-  },
+  'Introito y acto penitencial': [
+    { type: 'quiz', prompt: '¿Para qué nos reunimos en la Misa?', options: ['Para celebrar la Pasión, Muerte y Resurrección de Jesús', 'Para ver una película', 'Para hablar con los amigos'], answer: 'Para celebrar la Pasión, Muerte y Resurrección de Jesús' },
+    { type: 'match', prompt: 'Relaciona cada expresión con su significado.', pairs: [['Jesús sale a nuestro encuentro', 'Él nos reúne en la Misa'], ['Acto penitencial', 'Nos preparamos para el encuentro'], ['Pueblo de Dios', 'La familia que Jesús convoca']] },
+    { type: 'order', prompt: 'Ordena lo que ocurre al comenzar.', steps: ['Jesús nos convoca', 'Nos reunimos para celebrar', 'Nos preparamos con el acto penitencial'] },
+  ],
+  Gloria: [
+    { type: 'quiz', prompt: '¿Qué hacemos en el Gloria?', options: ['Alabamos a Dios', 'Rezamos por las necesidades del mundo', 'Recibimos la comunión'], answer: 'Alabamos a Dios' },
+    { type: 'match', prompt: 'Relaciona.', pairs: [['Gloria', 'Canto de alabanza'], ['Ritos iniciales', 'Comienzo de la celebración'], ['Alegría', 'Actitud de la gran fiesta de Jesús']] },
+    { type: 'quiz', prompt: '¿Por qué el Gloria es una oración de alegría?', options: ['Porque celebramos la gran fiesta de Jesús', 'Porque termina la Misa', 'Porque no hay lecturas'], answer: 'Porque celebramos la gran fiesta de Jesús' },
+  ],
+  'Oración colecta': [
+    { type: 'quiz', prompt: '¿Qué recoge la oración colecta?', options: ['La oración de toda la Iglesia', 'Las ofrendas del altar', 'Los cantos finales'], answer: 'La oración de toda la Iglesia' },
+    { type: 'match', prompt: 'Une cada idea.', pairs: [['Oración colecta', 'Recoge la oración de todos'], ['Comienzo de la celebración', 'Momento en que rezamos unidos'], ['Dios', 'A quien presentamos nuestra oración']] },
+  ],
+  Lecturas: [
+    { type: 'quiz', prompt: '¿Quién nos habla en las lecturas?', options: ['Jesús mismo', 'Solo el lector', 'Nadie'], answer: 'Jesús mismo' },
+    { type: 'match', prompt: 'Relaciona.', pairs: [['Lecturas', 'Pasajes de la Biblia'], ['Antiguo Testamento', 'Una parte de la Escritura'], ['Nuevo Testamento', 'Otra parte de la Escritura']] },
+    { type: 'quiz', prompt: '¿Qué nos cuenta Dios en su Palabra?', options: ['Lo que hace por nosotros', 'El horario del colegio', 'Noticias del mundo'], answer: 'Lo que hace por nosotros' },
+  ],
+  'Evangelio y homilía': [
+    { type: 'quiz', prompt: '¿Qué proclama el sacerdote en el Evangelio?', options: ['Un pasaje', 'Una lista de avisos', 'Una oración de despedida'], answer: 'Un pasaje' },
+    { type: 'match', prompt: 'Une cada palabra con su explicación.', pairs: [['Evangelio', 'Jesús nos explica las Escrituras'], ['Homilía', 'Ayuda a comprender la Palabra de Dios'], ['Discípulos de Emaús', 'Jesús les explicó las Escrituras']] },
+    { type: 'order', prompt: 'Ordena estos momentos.', steps: ['Se proclama el Evangelio', 'Escuchamos a Jesús', 'La homilía ayuda a aplicar la Palabra a la vida'] },
+  ],
+  'Credo y Oración universal': [
+    { type: 'quiz', prompt: '¿Qué hacemos en el Credo?', options: ['Proclamamos nuestra fe', 'Presentamos el pan y el vino', 'Recibimos la bendición final'], answer: 'Proclamamos nuestra fe' },
+    { type: 'match', prompt: 'Relaciona.', pairs: [['Credo', 'Respondemos proclamando nuestra fe'], ['Oración universal', 'Rezamos por las necesidades'], ['Iglesia y mundo entero', 'Por quienes rezamos']] },
+    { type: 'quiz', prompt: '¿Por quién rezamos en la oración universal?', options: ['Por la Iglesia y el mundo entero', 'Solo por los que están delante', 'Solo por los santos'], answer: 'Por la Iglesia y el mundo entero' },
+  ],
+  'Presentación de las ofrendas': [
+    { type: 'quiz', prompt: '¿Qué se presenta en las ofrendas?', options: ['El pan y el vino', 'El Evangeliario', 'La bendición final'], answer: 'El pan y el vino' },
+    { type: 'match', prompt: 'Relaciona.', pairs: [['Pan y vino', 'Dones que se presentan'], ['Bendecir a Dios', 'Dar gracias por esos dones'], ['Jesús', 'Toma el pan y el vino']] },
+    { type: 'order', prompt: 'Ordena.', steps: ['Se presentan el pan y el vino', 'Se bendice a Dios por esos dones', 'Jesús toma el pan y el vino'] },
+  ],
+  'Plegaria Eucarística': [
+    { type: 'quiz', prompt: '¿Qué tipo de oración es la Plegaria Eucarística?', options: ['Adoración, alabanza y acción de gracias', 'Solo una canción', 'Una despedida'], answer: 'Adoración, alabanza y acción de gracias' },
+    { type: 'match', prompt: 'Une las ideas.', pairs: [['Dios Padre', 'Recibe adoración, alabanza y acción de gracias'], ['Espíritu Santo', 'Por medio de Él actúa Jesús'], ['Nosotros', 'Somos su Cuerpo']] },
+    { type: 'quiz', prompt: '¿Quién hace esta oración unido a nosotros?', options: ['Jesús', 'Solo el lector', 'Solo el coro'], answer: 'Jesús' },
+  ],
+  Consagración: [
+    { type: 'quiz', prompt: '¿Qué ocurre en la Consagración?', options: ['El pan y el vino se transforman en el Cuerpo y la Sangre de Cristo', 'Se termina la Misa', 'Se leen las lecturas'], answer: 'El pan y el vino se transforman en el Cuerpo y la Sangre de Cristo' },
+    { type: 'match', prompt: 'Relaciona.', pairs: [['Sacerdote', 'Dice las palabras de Jesús en su nombre'], ['Pan y vino', 'Se transforman'], ['Transustanciación', 'Nombre de este misterio']] },
+    { type: 'order', prompt: 'Ordena.', steps: ['El sacerdote dice las palabras de Jesús', 'El pan y el vino se transforman', 'Jesús se hace realmente presente'] },
+  ],
+  'Santos y almas del purgatorio': [
+    { type: 'quiz', prompt: '¿Con quién estamos unidos en la Misa?', options: ['Con toda la Iglesia', 'Solo con los que vemos', 'Solo con el coro'], answer: 'Con toda la Iglesia' },
+    { type: 'match', prompt: 'Relaciona.', pairs: [['Santos del cielo', 'Forman parte de la Iglesia'], ['Almas del purgatorio', 'También rezamos unidos a ellas'], ['Fieles en la tierra', 'Peregrinan en la tierra']] },
+  ],
+  'Padre nuestro': [
+    { type: 'quiz', prompt: '¿Qué oración rezamos en este momento?', options: ['La oración que Jesús nos enseñó', 'El Gloria', 'El Credo'], answer: 'La oración que Jesús nos enseñó' },
+    { type: 'match', prompt: 'Relaciona.', pairs: [['Padre nuestro', 'Oración que Jesús nos enseñó'], ['Pan de Vida', 'Lo recibimos preparados'], ['Hermanos', 'Nos unimos como familia']] },
+    { type: 'order', prompt: 'Ordena.', steps: ['Rezamos el Padre nuestro', 'Nos preparamos para recibir el Pan de Vida', 'Vivimos unidos como hermanos'] },
+  ],
+  Comunión: [
+    { type: 'quiz', prompt: '¿Qué recibimos en la Comunión?', options: ['El Pan de Vida', 'Un premio cualquiera', 'Solo un recuerdo'], answer: 'El Pan de Vida' },
+    { type: 'match', prompt: 'Relaciona.', pairs: [['Jesús en la Eucaristía', 'Alimento que da Vida eterna'], ['Pan de Vida', 'Jesús se entrega a nosotros'], ['Un solo Cuerpo', 'Nos une con los hermanos en la fe']] },
+    { type: 'quiz', prompt: '¿Qué hace la Eucaristía con los hermanos en la fe?', options: ['Hace que formemos un solo Cuerpo', 'Nos separa', 'Nos hace olvidar la Misa'], answer: 'Hace que formemos un solo Cuerpo' },
+  ],
+  'Acción de gracias': [
+    { type: 'quiz', prompt: '¿Qué hacemos después de recibir a Jesús?', options: ['Damos gracias', 'Nos distraemos', 'Salimos corriendo'], answer: 'Damos gracias' },
+    { type: 'match', prompt: 'Relaciona.', pairs: [['Eucaristía', 'Regalo por el que damos gracias'], ['Jesús', 'Se queda con nosotros'], ['Gracia', 'Ayuda que necesitamos para nuestra vida']] },
+  ],
+  'Oración y bendición final': [
+    { type: 'quiz', prompt: '¿Qué encargo recibimos al terminar la Misa?', options: ['Llevar la Buena Noticia a todas las personas', 'Guardar silencio siempre', 'No hacer nada'], answer: 'Llevar la Buena Noticia a todas las personas' },
+    { type: 'match', prompt: 'Relaciona.', pairs: [['Rito de despedida', 'Jesús nos envía'], ['Buena Noticia', 'El Evangelio'], ['Todas las personas', 'A quienes debemos anunciar']] },
+    { type: 'order', prompt: 'Ordena.', steps: ['Termina la Misa', 'Recibimos el encargo', 'Llevamos la Buena Noticia'] },
+  ],
 };
 
 const celebrationIntro = [
@@ -204,32 +201,94 @@ function AppInfoModal({ onClose }) {
 }
 
 function CardActivities({ card }) {
-  const [answer, setAnswer] = useState('');
-  const [summary, setSummary] = useState('');
-  const activity = cardActivities[card.title];
+  const [answers, setAnswers] = useState({});
+  const [orderAnswers, setOrderAnswers] = useState({});
+  const activities = cardActivities[card.title] || [];
 
-  if (!activity) return null;
+  if (!activities.length) return null;
+
+  const setAnswer = (activityIndex, value) => {
+    setAnswers({ ...answers, [activityIndex]: value });
+  };
+
+  const chooseStep = (activityIndex, step) => {
+    const current = orderAnswers[activityIndex] || [];
+    if (current.includes(step)) return;
+    setOrderAnswers({ ...orderAnswers, [activityIndex]: [...current, step] });
+  };
+
+  const resetOrder = (activityIndex) => {
+    setOrderAnswers({ ...orderAnswers, [activityIndex]: [] });
+  };
 
   return (
     <div className="section-activities card-specific-activities">
-      <div className="mini-activity">
-        <div className="mini-heading"><HelpCircle size={20} /> <strong>Actividad 1</strong></div>
-        <p>{activity.question}</p>
-        <div className="answer-grid">
-          {activity.options.map((option) => (
-            <button className={'answer ' + (answer === option && option === activity.answer ? 'correct' : answer === option ? 'wrong' : '')} key={option} onClick={() => setAnswer(option)}>{option}</button>
-          ))}
-        </div>
-      </div>
-      <div className="mini-activity">
-        <div className="mini-heading"><CheckCircle2 size={20} /> <strong>Actividad 2</strong></div>
-        <p>¿Qué frase resume mejor este momento?</p>
-        <div className="answer-grid">
-          {[card.remember, 'Tener prisa', 'No prestar atención'].map((option) => (
-            <button className={'answer ' + (summary === option && option === card.remember ? 'correct' : summary === option ? 'wrong' : '')} key={option} onClick={() => setSummary(option)}>{option}</button>
-          ))}
-        </div>
-      </div>
+      {activities.map((activity, index) => {
+        if (activity.type === 'quiz') {
+          const selected = answers[index];
+          return (
+            <div className="mini-activity" key={`${card.title}-${index}`}>
+              <div className="mini-heading"><HelpCircle size={20} /> <strong>Actividad {index + 1}: elige</strong></div>
+              <p>{activity.prompt}</p>
+              <div className="answer-grid">
+                {activity.options.map((option) => (
+                  <button className={'answer ' + (selected === option && option === activity.answer ? 'correct' : selected === option ? 'wrong' : '')} key={option} onClick={() => setAnswer(index, option)}>{option}</button>
+                ))}
+              </div>
+            </div>
+          );
+        }
+
+        if (activity.type === 'match') {
+          const meanings = activity.pairs.map((pair) => pair[1]).reverse();
+          return (
+            <div className="mini-activity" key={`${card.title}-${index}`}>
+              <div className="mini-heading"><CheckCircle2 size={20} /> <strong>Actividad {index + 1}: relaciona</strong></div>
+              <p>{activity.prompt}</p>
+              <div className="match-list">
+                {activity.pairs.map(([term, meaning], pairIndex) => {
+                  const selected = answers[`match-${index}-${pairIndex}`];
+                  return (
+                  <div className="match-row" key={term}>
+                    <span>{term}</span>
+                    <div className="match-options">
+                      {meanings.map((option) => (
+                        <button
+                          className={'answer ' + (selected === option && option === meaning ? 'correct' : selected === option ? 'wrong' : '')}
+                          key={option}
+                          onClick={() => setAnswers({ ...answers, [`match-${index}-${pairIndex}`]: option })}
+                        >
+                          {option}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                  );
+                })}
+              </div>
+            </div>
+          );
+        }
+
+        const chosen = orderAnswers[index] || [];
+        const complete = chosen.length === activity.steps.length;
+        const correct = complete && chosen.every((step, stepIndex) => step === activity.steps[stepIndex]);
+        const available = [...activity.steps].reverse().filter((step) => !chosen.includes(step));
+        return (
+          <div className="mini-activity" key={`${card.title}-${index}`}>
+            <div className="mini-heading"><ArrowRight size={20} /> <strong>Actividad {index + 1}: ordena</strong></div>
+            <p>{activity.prompt}</p>
+            <div className="chosen-row compact">
+              {activity.steps.map((_, stepIndex) => <span className="slot" key={stepIndex}>{chosen[stepIndex] || stepIndex + 1}</span>)}
+            </div>
+            <div className="answer-grid">
+              {available.map((step) => <button className="answer" key={step} onClick={() => chooseStep(index, step)}>{step}</button>)}
+            </div>
+            {complete && <div className={`result ${correct ? 'success' : 'try-again'}`}>{correct ? 'Correcto.' : 'Reinicia e inténtalo otra vez.'}</div>}
+            <button className="reset-button" type="button" onClick={() => resetOrder(index)}><RotateCcw size={16} /> Reiniciar</button>
+          </div>
+        );
+      })}
     </div>
   );
 }
