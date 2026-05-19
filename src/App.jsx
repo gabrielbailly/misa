@@ -1,4 +1,6 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
+import { onAuthStateChanged, signInWithPopup, signOut } from 'firebase/auth';
+import { addDoc, collection, doc, getDoc, getDocs, query, serverTimestamp, setDoc, where } from 'firebase/firestore';
 import {
   ArrowRight,
   BookOpen,
@@ -22,12 +24,15 @@ import {
   X,
   ScrollText
 } from 'lucide-react';
+import { auth, db, googleProvider, isFirebaseConfigured } from './firebase';
 
 // Ajuste para GitHub Pages
 const BASE_URL = import.meta.env.BASE_URL || '/';
 const asset = (path) => encodeURI(BASE_URL + path.replace(/^\//, '').normalize('NFC'));
 const TEACHER_PASSWORD = 'misa2026';
 const LOCKED_SECTIONS_KEY = 'misa-locked-sections';
+const ACTIVE_CLASS_KEY = 'misa-active-class';
+const TEXT_OVERRIDES_KEY = 'misa-text-overrides';
 
 // --- Estructura de Oraciones ---
 const prayers = {
@@ -154,6 +159,26 @@ const celebrationIntro = [
   'La Misa tiene dos momentos principales, la Liturgia de la Palabra y la Liturgia Eucarística, con unos ritos iniciales y un rito de despedida.',
 ];
 
+const cloneMisaData = () => misaData.map((section) => ({
+  ...section,
+  cards: section.cards.map((card) => ({ ...card })),
+}));
+
+const applyTextOverrides = (sections, textOverrides = {}) => sections.map((section) => ({
+  ...section,
+  cards: section.cards.map((card) => ({
+    ...card,
+    ...(textOverrides[card.title] || {}),
+  })),
+}));
+
+const getTextOverrides = (sections) => sections.reduce((overrides, section) => {
+  section.cards.forEach((card) => {
+    overrides[card.title] = { text: card.text, remember: card.remember };
+  });
+  return overrides;
+}, {});
+
 // --- Componentes ---
 
 function PrayerModal({ prayerTitle, prayerLines, onClose }) {
@@ -202,10 +227,34 @@ function AppInfoModal({ onClose }) {
   );
 }
 
-function TeacherModal({ lockedSections, onClose, onLockAll, onUnlockAll, onToggleSection }) {
+function TeacherModal({
+  activeClass,
+  classes,
+  editableSections,
+  firebaseEnabled,
+  isSaving,
+  lockedSections,
+  onClose,
+  onCreateClass,
+  onLockAll,
+  onLogin,
+  onLogout,
+  onSaveText,
+  onSelectClass,
+  onToggleSection,
+  onUnlockAll,
+  teacher,
+}) {
   const [password, setPassword] = useState('');
   const [isTeacher, setIsTeacher] = useState(false);
   const [error, setError] = useState('');
+  const [className, setClassName] = useState('');
+  const [editingCard, setEditingCard] = useState(null);
+  const [editingText, setEditingText] = useState('');
+  const [editingRemember, setEditingRemember] = useState('');
+  const canManage = firebaseEnabled ? Boolean(teacher) : isTeacher;
+  const needsClass = firebaseEnabled && !activeClass;
+  const classLink = activeClass ? `${window.location.origin}${BASE_URL}?class=${activeClass.id}` : '';
 
   const handleLogin = (event) => {
     event.preventDefault();
@@ -217,36 +266,116 @@ function TeacherModal({ lockedSections, onClose, onLockAll, onUnlockAll, onToggl
     setError('Contraseña incorrecta.');
   };
 
+  const handleCreateClass = async (event) => {
+    event.preventDefault();
+    if (!className.trim()) return;
+    await onCreateClass(className.trim());
+    setClassName('');
+  };
+
+  const startEditing = (card) => {
+    setEditingCard(card.title);
+    setEditingText(card.text);
+    setEditingRemember(card.remember);
+  };
+
+  const saveEditing = async () => {
+    await onSaveText(editingCard, editingText, editingRemember);
+    setEditingCard(null);
+  };
+
   return (
     <div className="modal-overlay" onClick={onClose}>
       <div className="modal-content teacher-modal" onClick={e => e.stopPropagation()}>
         <button className="modal-close" onClick={onClose}><X /></button>
         <h2 className="modal-title">Acceso profesor</h2>
-        {!isTeacher ? (
+        {firebaseEnabled && !teacher && (
+          <div className="teacher-login">
+            <p>Entra con tu cuenta de Google para guardar tus clases y usarlas desde otros ordenadores.</p>
+            <button className="primary-button" type="button" onClick={onLogin}>Entrar con Google</button>
+          </div>
+        )}
+        {!firebaseEnabled && !isTeacher ? (
           <form className="teacher-login" onSubmit={handleLogin}>
+            <p>Firebase todavía no está configurado. Mientras tanto, este modo guarda los cambios solo en este navegador.</p>
             <label htmlFor="teacher-password">Contraseña</label>
             <input id="teacher-password" type="password" value={password} onChange={(event) => setPassword(event.target.value)} autoFocus />
             {error && <p className="teacher-error">{error}</p>}
             <button className="primary-button" type="submit">Entrar</button>
           </form>
-        ) : (
+        ) : canManage && (
           <div className="teacher-panel">
+            {teacher && (
+              <div className="teacher-user-row">
+                <span>{teacher.displayName || teacher.email}</span>
+                <button className="secondary-button" type="button" onClick={onLogout}>Salir</button>
+              </div>
+            )}
+            {firebaseEnabled && (
+              <>
+                <form className="teacher-class-form" onSubmit={handleCreateClass}>
+                  <input value={className} onChange={(event) => setClassName(event.target.value)} placeholder="Nueva clase, por ejemplo 4ºA" />
+                  <button className="primary-button" type="submit">Crear clase</button>
+                </form>
+                <div className="teacher-class-list">
+                  {classes.map((classItem) => (
+                    <button className={activeClass?.id === classItem.id ? 'teacher-class active' : 'teacher-class'} key={classItem.id} type="button" onClick={() => onSelectClass(classItem.id)}>
+                      {classItem.name}
+                    </button>
+                  ))}
+                </div>
+                {activeClass && (
+                  <div className="teacher-share-link">
+                    <strong>Enlace para alumnos</strong>
+                    <input readOnly value={classLink} onFocus={(event) => event.target.select()} />
+                  </div>
+                )}
+                {!activeClass && <p className="teacher-error">Crea o selecciona una clase para guardar cambios.</p>}
+              </>
+            )}
             <p>Elige qué partes de la Misa podrán abrir los alumnos.</p>
             <div className="teacher-actions">
-              <button className="secondary-button" type="button" onClick={onUnlockAll}>Desbloquear todo</button>
-              <button className="secondary-button" type="button" onClick={onLockAll}>Bloquear todo</button>
+              <button className="secondary-button" type="button" onClick={onUnlockAll} disabled={needsClass}>Desbloquear todo</button>
+              <button className="secondary-button" type="button" onClick={onLockAll} disabled={needsClass}>Bloquear todo</button>
             </div>
             <div className="teacher-section-list">
               {misaData.map((section) => {
                 const isLocked = lockedSections.includes(section.id);
                 return (
-                  <button className={isLocked ? 'teacher-section locked' : 'teacher-section'} type="button" key={section.id} onClick={() => onToggleSection(section.id)}>
+                  <button className={isLocked ? 'teacher-section locked' : 'teacher-section'} type="button" key={section.id} onClick={() => onToggleSection(section.id)} disabled={needsClass}>
                     <span>{section.title}</span>
                     <strong>{isLocked ? 'Bloqueada' : 'Desbloqueada'}</strong>
                   </button>
                 );
               })}
             </div>
+            <div className="teacher-text-editor">
+              <h3>Editar textos</h3>
+              {editableSections.map((section) => (
+                <div className="teacher-edit-section" key={section.id}>
+                  <strong>{section.title}</strong>
+                  {section.cards.map((card) => (
+                    <div className="teacher-edit-card" key={card.title}>
+                      <span>{card.title}</span>
+                      <button className="secondary-button" type="button" onClick={() => startEditing(card)} disabled={needsClass}>Editar</button>
+                    </div>
+                  ))}
+                </div>
+              ))}
+            </div>
+            {editingCard && (
+              <div className="teacher-inline-editor">
+                <h3>{editingCard}</h3>
+                <label>Texto principal</label>
+                <textarea value={editingText} onChange={(event) => setEditingText(event.target.value)} rows="5" />
+                <label>Recuerda</label>
+                <textarea value={editingRemember} onChange={(event) => setEditingRemember(event.target.value)} rows="3" />
+                <div className="teacher-actions">
+                  <button className="primary-button" type="button" onClick={saveEditing} disabled={isSaving}>{isSaving ? 'Guardando...' : 'Guardar texto'}</button>
+                  <button className="secondary-button" type="button" onClick={() => setEditingCard(null)}>Cancelar</button>
+                </div>
+              </div>
+            )}
           </div>
         )}
       </div>
@@ -477,6 +606,17 @@ export default function App() {
   const [showPrologue, setShowPrologue] = useState(false);
   const [showAppInfo, setShowAppInfo] = useState(false);
   const [showTeacherModal, setShowTeacherModal] = useState(false);
+  const [teacher, setTeacher] = useState(null);
+  const [classes, setClasses] = useState([]);
+  const [activeClass, setActiveClass] = useState(null);
+  const [isSaving, setIsSaving] = useState(false);
+  const [textOverrides, setTextOverrides] = useState(() => {
+    try {
+      return JSON.parse(localStorage.getItem(TEXT_OVERRIDES_KEY)) || {};
+    } catch {
+      return {};
+    }
+  });
   const [lockedSections, setLockedSections] = useState(() => {
     try {
       return JSON.parse(localStorage.getItem(LOCKED_SECTIONS_KEY)) || [];
@@ -484,10 +624,103 @@ export default function App() {
       return [];
     }
   });
+  const editableSections = applyTextOverrides(cloneMisaData(), textOverrides);
+
+  useEffect(() => {
+    if (!isFirebaseConfigured || !auth) return undefined;
+    return onAuthStateChanged(auth, (currentUser) => {
+      setTeacher(currentUser);
+      if (!currentUser) {
+        setClasses([]);
+        setActiveClass(null);
+      }
+    });
+  }, []);
+
+  useEffect(() => {
+    if (!isFirebaseConfigured || !db) return;
+    const classId = new URLSearchParams(window.location.search).get('class');
+    if (classId) selectClass(classId, [{ id: classId }]);
+  }, []);
+
+  useEffect(() => {
+    if (!isFirebaseConfigured || !db || !teacher) return;
+
+    const loadClasses = async () => {
+      const classesQuery = query(collection(db, 'classes'), where('ownerUid', '==', teacher.uid));
+      const snapshot = await getDocs(classesQuery);
+      const nextClasses = snapshot.docs.map((classDoc) => ({ id: classDoc.id, ...classDoc.data() }));
+      setClasses(nextClasses);
+
+      const storedClassId = localStorage.getItem(ACTIVE_CLASS_KEY);
+      const nextActiveClass = nextClasses.find((classItem) => classItem.id === storedClassId) || nextClasses[0] || null;
+      if (nextActiveClass) selectClass(nextActiveClass.id, nextClasses);
+    };
+
+    loadClasses();
+  }, [teacher]);
+
+  const selectClass = async (classId, availableClasses = classes) => {
+    const classDoc = availableClasses.find((classItem) => classItem.id === classId);
+    if (!classDoc) return;
+    const freshDoc = db ? await getDoc(doc(db, 'classes', classId)) : null;
+    const nextClass = freshDoc?.exists() ? { id: freshDoc.id, ...freshDoc.data() } : classDoc;
+    setActiveClass(nextClass);
+    setLockedSections(nextClass.lockedSections || []);
+    setTextOverrides(nextClass.textOverrides || {});
+    localStorage.setItem(ACTIVE_CLASS_KEY, nextClass.id);
+  };
+
+  const loginTeacher = async () => {
+    if (!auth || !googleProvider) return;
+    await signInWithPopup(auth, googleProvider);
+  };
+
+  const logoutTeacher = async () => {
+    if (!auth) return;
+    await signOut(auth);
+  };
+
+  const createClass = async (name) => {
+    if (!db || !teacher) return;
+    const newClass = {
+      name,
+      ownerUid: teacher.uid,
+      ownerEmail: teacher.email,
+      lockedSections: [],
+      textOverrides: getTextOverrides(cloneMisaData()),
+      createdAt: serverTimestamp(),
+      updatedAt: serverTimestamp(),
+    };
+    const created = await addDoc(collection(db, 'classes'), newClass);
+    const nextClass = { id: created.id, ...newClass, createdAt: null, updatedAt: null };
+    const nextClasses = [nextClass, ...classes];
+    setClasses(nextClasses);
+    await selectClass(created.id, nextClasses);
+  };
+
+  const saveClassState = async (nextLockedSections, nextTextOverrides = textOverrides) => {
+    if (!isFirebaseConfigured || !db || !activeClass) {
+      if (isFirebaseConfigured) return;
+      localStorage.setItem(LOCKED_SECTIONS_KEY, JSON.stringify(nextLockedSections));
+      localStorage.setItem(TEXT_OVERRIDES_KEY, JSON.stringify(nextTextOverrides));
+      return;
+    }
+    setIsSaving(true);
+    try {
+      await setDoc(doc(db, 'classes', activeClass.id), {
+        lockedSections: nextLockedSections,
+        textOverrides: nextTextOverrides,
+        updatedAt: serverTimestamp(),
+      }, { merge: true });
+    } finally {
+      setIsSaving(false);
+    }
+  };
 
   const saveLockedSections = (nextLockedSections) => {
     setLockedSections(nextLockedSections);
-    localStorage.setItem(LOCKED_SECTIONS_KEY, JSON.stringify(nextLockedSections));
+    saveClassState(nextLockedSections);
     if (nextLockedSections.includes(openSection)) setOpenSection(null);
   };
 
@@ -496,6 +729,15 @@ export default function App() {
       ? lockedSections.filter((id) => id !== sectionId)
       : [...lockedSections, sectionId];
     saveLockedSections(nextLockedSections);
+  };
+
+  const saveText = async (cardTitle, text, remember) => {
+    const nextTextOverrides = {
+      ...textOverrides,
+      [cardTitle]: { text, remember },
+    };
+    setTextOverrides(nextTextOverrides);
+    await saveClassState(lockedSections, nextTextOverrides);
   };
 
   return (
@@ -507,11 +749,22 @@ export default function App() {
       {showAppInfo && <AppInfoModal onClose={() => setShowAppInfo(false)} />}
       {showTeacherModal && (
         <TeacherModal
+          activeClass={activeClass}
+          classes={classes}
+          editableSections={editableSections}
+          firebaseEnabled={isFirebaseConfigured}
+          isSaving={isSaving}
           lockedSections={lockedSections}
           onClose={() => setShowTeacherModal(false)}
+          onCreateClass={createClass}
           onLockAll={() => saveLockedSections(misaData.map((section) => section.id))}
+          onLogin={loginTeacher}
+          onLogout={logoutTeacher}
+          onSaveText={saveText}
+          onSelectClass={selectClass}
           onUnlockAll={() => saveLockedSections([])}
           onToggleSection={toggleLockedSection}
+          teacher={teacher}
         />
       )}
       {showCover ? (
@@ -543,7 +796,7 @@ export default function App() {
             {celebrationIntro.map((paragraph, index) => <p key={index}>{paragraph}</p>)}
           </div>
           <div className="sections-list">
-            {misaData.map((section) => (
+            {editableSections.map((section) => (
               <SectionCard key={section.id} section={section} isOpen={openSection === section.id} isLocked={lockedSections.includes(section.id)} onToggle={() => setOpenSection(openSection === section.id ? null : section.id)} onOpenPrayer={setPrayerModal} />
             ))}
           </div>
