@@ -26,6 +26,8 @@ import {
 // Ajuste para GitHub Pages
 const BASE_URL = import.meta.env.BASE_URL || '/';
 const asset = (path) => encodeURI(BASE_URL + path.replace(/^\//, '').normalize('NFC'));
+const TEACHER_PASSWORD = 'misa2026';
+const LOCKED_SECTIONS_KEY = 'misa-locked-sections';
 
 // --- Estructura de Oraciones ---
 const prayers = {
@@ -200,6 +202,58 @@ function AppInfoModal({ onClose }) {
   );
 }
 
+function TeacherModal({ lockedSections, onClose, onLockAll, onUnlockAll, onToggleSection }) {
+  const [password, setPassword] = useState('');
+  const [isTeacher, setIsTeacher] = useState(false);
+  const [error, setError] = useState('');
+
+  const handleLogin = (event) => {
+    event.preventDefault();
+    if (password === TEACHER_PASSWORD) {
+      setIsTeacher(true);
+      setError('');
+      return;
+    }
+    setError('Contraseña incorrecta.');
+  };
+
+  return (
+    <div className="modal-overlay" onClick={onClose}>
+      <div className="modal-content teacher-modal" onClick={e => e.stopPropagation()}>
+        <button className="modal-close" onClick={onClose}><X /></button>
+        <h2 className="modal-title">Acceso profesor</h2>
+        {!isTeacher ? (
+          <form className="teacher-login" onSubmit={handleLogin}>
+            <label htmlFor="teacher-password">Contraseña</label>
+            <input id="teacher-password" type="password" value={password} onChange={(event) => setPassword(event.target.value)} autoFocus />
+            {error && <p className="teacher-error">{error}</p>}
+            <button className="primary-button" type="submit">Entrar</button>
+          </form>
+        ) : (
+          <div className="teacher-panel">
+            <p>Elige qué partes de la Misa podrán abrir los alumnos.</p>
+            <div className="teacher-actions">
+              <button className="secondary-button" type="button" onClick={onUnlockAll}>Desbloquear todo</button>
+              <button className="secondary-button" type="button" onClick={onLockAll}>Bloquear todo</button>
+            </div>
+            <div className="teacher-section-list">
+              {misaData.map((section) => {
+                const isLocked = lockedSections.includes(section.id);
+                return (
+                  <button className={isLocked ? 'teacher-section locked' : 'teacher-section'} type="button" key={section.id} onClick={() => onToggleSection(section.id)}>
+                    <span>{section.title}</span>
+                    <strong>{isLocked ? 'Bloqueada' : 'Desbloqueada'}</strong>
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
 function CardActivities({ card }) {
   const [answers, setAnswers] = useState({});
   const [orderAnswers, setOrderAnswers] = useState({});
@@ -332,24 +386,25 @@ function LessonCard({ card, current, total, onOpenPrayer }) {
   );
 }
 
-function SectionCard({ section, isOpen, onToggle, onOpenPrayer }) {
+function SectionCard({ section, isOpen, isLocked, onToggle, onOpenPrayer }) {
   const [activeCard, setActiveCard] = useState(0);
-  const handleToggle = () => { if (!isOpen) setActiveCard(0); onToggle(); };
+  const handleToggle = () => { if (isLocked) return; if (!isOpen) setActiveCard(0); onToggle(); };
   const Icon = section.icon;
   const card = section.cards[activeCard];
 
   return (
-    <article className={`section-card ${isOpen ? 'is-open' : ''}`}>
-      <button className="section-head" onClick={handleToggle} aria-expanded={isOpen}>
+    <article className={`section-card ${isOpen && !isLocked ? 'is-open' : ''} ${isLocked ? 'is-locked' : ''}`}>
+      <button className="section-head" onClick={handleToggle} aria-expanded={isOpen && !isLocked} aria-disabled={isLocked}>
         <span className="icon-bubble"><Icon size={30} /></span>
         <span className="section-title-wrap">
           <span className="eyebrow">Parte {section.id + 1}</span>
           <span className="section-title">{section.title}</span>
+          {isLocked && <span className="locked-label">Bloqueada por el profesor</span>}
         </span>
-        {isOpen ? <ChevronUp className="chevron" /> : <ChevronDown className="chevron" />}
+        {isLocked ? <span className="lock-badge">Cerrada</span> : isOpen ? <ChevronUp className="chevron" /> : <ChevronDown className="chevron" />}
       </button>
 
-      <div className="section-body" hidden={!isOpen}>
+      <div className="section-body" hidden={!isOpen || isLocked}>
         <div className="card-viewer">
           <button className="viewer-arrow" onClick={() => setActiveCard((activeCard - 1 + section.cards.length) % section.cards.length)}><ChevronLeft size={28} /></button>
           <LessonCard card={card} current={activeCard + 1} total={section.cards.length} onOpenPrayer={onOpenPrayer} />
@@ -421,6 +476,27 @@ export default function App() {
   const [showCover, setShowCover] = useState(true);
   const [showPrologue, setShowPrologue] = useState(false);
   const [showAppInfo, setShowAppInfo] = useState(false);
+  const [showTeacherModal, setShowTeacherModal] = useState(false);
+  const [lockedSections, setLockedSections] = useState(() => {
+    try {
+      return JSON.parse(localStorage.getItem(LOCKED_SECTIONS_KEY)) || [];
+    } catch {
+      return [];
+    }
+  });
+
+  const saveLockedSections = (nextLockedSections) => {
+    setLockedSections(nextLockedSections);
+    localStorage.setItem(LOCKED_SECTIONS_KEY, JSON.stringify(nextLockedSections));
+    if (nextLockedSections.includes(openSection)) setOpenSection(null);
+  };
+
+  const toggleLockedSection = (sectionId) => {
+    const nextLockedSections = lockedSections.includes(sectionId)
+      ? lockedSections.filter((id) => id !== sectionId)
+      : [...lockedSections, sectionId];
+    saveLockedSections(nextLockedSections);
+  };
 
   return (
     <div className="page-shell">
@@ -429,6 +505,15 @@ export default function App() {
       )}
       {showPrologue && <PrologueModal onClose={() => setShowPrologue(false)} />}
       {showAppInfo && <AppInfoModal onClose={() => setShowAppInfo(false)} />}
+      {showTeacherModal && (
+        <TeacherModal
+          lockedSections={lockedSections}
+          onClose={() => setShowTeacherModal(false)}
+          onLockAll={() => saveLockedSections(misaData.map((section) => section.id))}
+          onUnlockAll={() => saveLockedSections([])}
+          onToggleSection={toggleLockedSection}
+        />
+      )}
       {showCover ? (
         <header className="hero cover-hero">
           <nav className="cover-topbar">
@@ -451,6 +536,7 @@ export default function App() {
         <section className="content-section" id="partes">
           <div className="content-actions">
             <button className="back-home-button primary-button" type="button" onClick={() => setShowCover(true)}>Volver al inicio</button>
+            <button className="teacher-access-button primary-button" type="button" onClick={() => setShowTeacherModal(true)}>Profesor</button>
           </div>
           <h2 className="eucaristia-heading">La celebración de la Eucaristía</h2>
           <div className="celebration-intro">
@@ -458,7 +544,7 @@ export default function App() {
           </div>
           <div className="sections-list">
             {misaData.map((section) => (
-              <SectionCard key={section.id} section={section} isOpen={openSection === section.id} onToggle={() => setOpenSection(openSection === section.id ? null : section.id)} onOpenPrayer={setPrayerModal} />
+              <SectionCard key={section.id} section={section} isOpen={openSection === section.id} isLocked={lockedSections.includes(section.id)} onToggle={() => setOpenSection(openSection === section.id ? null : section.id)} onOpenPrayer={setPrayerModal} />
             ))}
           </div>
         </section>
