@@ -34,6 +34,7 @@ const LOCKED_SECTIONS_KEY = 'misa-locked-sections';
 const ACTIVE_CLASS_KEY = 'misa-active-class';
 const TEXT_OVERRIDES_KEY = 'misa-text-overrides';
 const INTRO_OVERRIDES_KEY = 'misa-intro-overrides';
+const ACTIVITY_OVERRIDES_KEY = 'misa-activity-overrides';
 const TEACHER_EMAILS = (import.meta.env.VITE_TEACHER_EMAILS || '')
   .split(',')
   .map((email) => email.trim().toLowerCase())
@@ -179,6 +180,14 @@ const applyTextOverrides = (sections, textOverrides = {}) => sections.map((secti
   })),
 }));
 
+const applyActivityOverrides = (sections, activityOverrides = {}) => sections.map((section) => ({
+  ...section,
+  cards: section.cards.map((card) => ({
+    ...card,
+    activities: activityOverrides[card.title] || cardActivities[card.title] || [],
+  })),
+}));
+
 const getTextOverrides = (sections) => sections.reduce((overrides, section) => {
   section.cards.forEach((card) => {
     overrides[card.title] = { text: card.text, remember: card.remember };
@@ -250,6 +259,7 @@ function TeacherModal({
   onLogin,
   onLogout,
   onAddTeacherEmail,
+  onSaveActivities,
   onSaveIntro,
   onSaveText,
   onSelectClass,
@@ -266,6 +276,8 @@ function TeacherModal({
   const [editingText, setEditingText] = useState('');
   const [editingRemember, setEditingRemember] = useState('');
   const [editingIntro, setEditingIntro] = useState(null);
+  const [editingActivitiesCard, setEditingActivitiesCard] = useState(null);
+  const [editingActivities, setEditingActivities] = useState('');
   const [newTeacherEmail, setNewTeacherEmail] = useState('');
   const [teacherEmailMessage, setTeacherEmailMessage] = useState('');
   const [actionError, setActionError] = useState('');
@@ -318,6 +330,23 @@ function TeacherModal({
     const nextIntro = editingIntro.split('\n').map((line) => line.trim()).filter(Boolean);
     await onSaveIntro(nextIntro);
     setEditingIntro(null);
+  };
+
+  const startEditingActivities = (card) => {
+    setEditingActivitiesCard(card.title);
+    setEditingActivities(JSON.stringify(card.activities || [], null, 2));
+  };
+
+  const saveActivities = async () => {
+    setActionError('');
+    try {
+      const parsedActivities = JSON.parse(editingActivities);
+      if (!Array.isArray(parsedActivities)) throw new Error('Las actividades deben ser una lista.');
+      await onSaveActivities(editingActivitiesCard, parsedActivities);
+      setEditingActivitiesCard(null);
+    } catch (error) {
+      setActionError(error.message || 'No se han podido guardar las actividades.');
+    }
   };
 
   const addTeacherEmail = async (event) => {
@@ -426,7 +455,10 @@ function TeacherModal({
                   {section.cards.map((card) => (
                     <div className="teacher-edit-card" key={card.title}>
                       <span>{card.title}</span>
-                      <button className="secondary-button" type="button" onClick={() => startEditing(card)} disabled={needsClass}>Editar</button>
+                      <div className="teacher-edit-actions">
+                        <button className="secondary-button" type="button" onClick={() => startEditing(card)} disabled={needsClass}>Editar texto</button>
+                        <button className="secondary-button" type="button" onClick={() => startEditingActivities(card)} disabled={needsClass}>Editar actividades</button>
+                      </div>
                     </div>
                   ))}
                 </div>
@@ -456,6 +488,18 @@ function TeacherModal({
                 </div>
               </div>
             )}
+            {editingActivitiesCard && (
+              <div className="teacher-inline-editor">
+                <h3>Actividades: {editingActivitiesCard}</h3>
+                <label>Edita la lista de actividades</label>
+                <textarea value={editingActivities} onChange={(event) => setEditingActivities(event.target.value)} rows="14" />
+                <p>Tipos disponibles: quiz, match y order. Conserva las comillas, corchetes y comas.</p>
+                <div className="teacher-actions">
+                  <button className="primary-button" type="button" onClick={saveActivities} disabled={isSaving}>{isSaving ? 'Guardando...' : 'Guardar actividades'}</button>
+                  <button className="secondary-button" type="button" onClick={() => setEditingActivitiesCard(null)}>Cancelar</button>
+                </div>
+              </div>
+            )}
           </div>
         )}
       </div>
@@ -467,7 +511,7 @@ function CardActivities({ card }) {
   const [answers, setAnswers] = useState({});
   const [orderAnswers, setOrderAnswers] = useState({});
   const [draggedMeaning, setDraggedMeaning] = useState('');
-  const activities = cardActivities[card.title] || [];
+  const activities = card.activities || cardActivities[card.title] || [];
 
   if (!activities.length) return null;
 
@@ -705,6 +749,13 @@ export default function App() {
       return [];
     }
   });
+  const [activityOverrides, setActivityOverrides] = useState(() => {
+    try {
+      return JSON.parse(localStorage.getItem(ACTIVITY_OVERRIDES_KEY)) || {};
+    } catch {
+      return {};
+    }
+  });
   const [lockedSections, setLockedSections] = useState(() => {
     try {
       return JSON.parse(localStorage.getItem(LOCKED_SECTIONS_KEY)) || [];
@@ -712,7 +763,7 @@ export default function App() {
       return [];
     }
   });
-  const editableSections = applyTextOverrides(cloneMisaData(), textOverrides);
+  const editableSections = applyActivityOverrides(applyTextOverrides(cloneMisaData(), textOverrides), activityOverrides);
   const introText = getIntroText(introOverrides);
   useEffect(() => {
     if (!isFirebaseConfigured || !auth) return undefined;
@@ -778,6 +829,7 @@ export default function App() {
     setLockedSections(nextClass.lockedSections || []);
     setTextOverrides(nextClass.textOverrides || {});
     setIntroOverrides(nextClass.introOverrides || []);
+    setActivityOverrides(nextClass.activityOverrides || {});
     localStorage.setItem(ACTIVE_CLASS_KEY, nextClass.id);
   };
 
@@ -802,6 +854,7 @@ export default function App() {
       lockedSections: [],
       textOverrides: getTextOverrides(cloneMisaData()),
       introOverrides: celebrationIntro,
+      activityOverrides: cardActivities,
       createdAt: serverTimestamp(),
       updatedAt: serverTimestamp(),
     };
@@ -824,12 +877,13 @@ export default function App() {
     }, { merge: true });
   };
 
-  const saveClassState = async (nextLockedSections, nextTextOverrides = textOverrides, nextIntroOverrides = introOverrides) => {
+  const saveClassState = async (nextLockedSections, nextTextOverrides = textOverrides, nextIntroOverrides = introOverrides, nextActivityOverrides = activityOverrides) => {
     if (!isFirebaseConfigured || !db || !activeClass) {
       if (isFirebaseConfigured) return;
       localStorage.setItem(LOCKED_SECTIONS_KEY, JSON.stringify(nextLockedSections));
       localStorage.setItem(TEXT_OVERRIDES_KEY, JSON.stringify(nextTextOverrides));
       localStorage.setItem(INTRO_OVERRIDES_KEY, JSON.stringify(nextIntroOverrides));
+      localStorage.setItem(ACTIVITY_OVERRIDES_KEY, JSON.stringify(nextActivityOverrides));
       return;
     }
     setIsSaving(true);
@@ -838,6 +892,7 @@ export default function App() {
         lockedSections: nextLockedSections,
         textOverrides: nextTextOverrides,
         introOverrides: nextIntroOverrides,
+        activityOverrides: nextActivityOverrides,
         updatedAt: serverTimestamp(),
       }, { merge: true });
     } finally {
@@ -872,6 +927,15 @@ export default function App() {
     await saveClassState(lockedSections, textOverrides, nextIntroOverrides);
   };
 
+  const saveActivities = async (cardTitle, nextActivities) => {
+    const nextActivityOverrides = {
+      ...activityOverrides,
+      [cardTitle]: nextActivities,
+    };
+    setActivityOverrides(nextActivityOverrides);
+    await saveClassState(lockedSections, textOverrides, introOverrides, nextActivityOverrides);
+  };
+
   return (
     <div className="page-shell">
       {prayerModal && (
@@ -894,6 +958,7 @@ export default function App() {
           onLogin={loginTeacher}
           onLogout={logoutTeacher}
           onAddTeacherEmail={addTeacherEmail}
+          onSaveActivities={saveActivities}
           onSaveIntro={saveIntro}
           onSaveText={saveText}
           onSelectClass={selectClass}
