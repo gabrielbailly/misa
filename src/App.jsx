@@ -33,6 +33,7 @@ const TEACHER_PASSWORD = 'misa2026';
 const LOCKED_SECTIONS_KEY = 'misa-locked-sections';
 const ACTIVE_CLASS_KEY = 'misa-active-class';
 const TEXT_OVERRIDES_KEY = 'misa-text-overrides';
+const INTRO_OVERRIDES_KEY = 'misa-intro-overrides';
 const TEACHER_EMAILS = (import.meta.env.VITE_TEACHER_EMAILS || '')
   .split(',')
   .map((email) => email.trim().toLowerCase())
@@ -185,6 +186,8 @@ const getTextOverrides = (sections) => sections.reduce((overrides, section) => {
   return overrides;
 }, {});
 
+const getIntroText = (introOverrides) => introOverrides?.length ? introOverrides : celebrationIntro;
+
 // --- Componentes ---
 
 function PrayerModal({ prayerTitle, prayerLines, onClose }) {
@@ -238,6 +241,7 @@ function TeacherModal({
   classes,
   editableSections,
   firebaseEnabled,
+  introText,
   isSaving,
   lockedSections,
   onClose,
@@ -246,6 +250,7 @@ function TeacherModal({
   onLogin,
   onLogout,
   onAddTeacherEmail,
+  onSaveIntro,
   onSaveText,
   onSelectClass,
   onToggleSection,
@@ -260,6 +265,7 @@ function TeacherModal({
   const [editingCard, setEditingCard] = useState(null);
   const [editingText, setEditingText] = useState('');
   const [editingRemember, setEditingRemember] = useState('');
+  const [editingIntro, setEditingIntro] = useState(null);
   const [newTeacherEmail, setNewTeacherEmail] = useState('');
   const [teacherEmailMessage, setTeacherEmailMessage] = useState('');
   const [actionError, setActionError] = useState('');
@@ -302,6 +308,16 @@ function TeacherModal({
   const saveEditing = async () => {
     await onSaveText(editingCard, editingText, editingRemember);
     setEditingCard(null);
+  };
+
+  const startEditingIntro = () => {
+    setEditingIntro(introText.join('\n\n'));
+  };
+
+  const saveIntro = async () => {
+    const nextIntro = editingIntro.split('\n').map((line) => line.trim()).filter(Boolean);
+    await onSaveIntro(nextIntro);
+    setEditingIntro(null);
   };
 
   const addTeacherEmail = async (event) => {
@@ -397,6 +413,13 @@ function TeacherModal({
             </div>
             <div className="teacher-text-editor">
               <h3>Editar textos</h3>
+              <div className="teacher-edit-section">
+                <strong>La celebración de la Eucaristía</strong>
+                <div className="teacher-edit-card">
+                  <span>Texto introductorio</span>
+                  <button className="secondary-button" type="button" onClick={startEditingIntro} disabled={needsClass}>Editar</button>
+                </div>
+              </div>
               {editableSections.map((section) => (
                 <div className="teacher-edit-section" key={section.id}>
                   <strong>{section.title}</strong>
@@ -419,6 +442,17 @@ function TeacherModal({
                 <div className="teacher-actions">
                   <button className="primary-button" type="button" onClick={saveEditing} disabled={isSaving}>{isSaving ? 'Guardando...' : 'Guardar texto'}</button>
                   <button className="secondary-button" type="button" onClick={() => setEditingCard(null)}>Cancelar</button>
+                </div>
+              </div>
+            )}
+            {editingIntro !== null && (
+              <div className="teacher-inline-editor">
+                <h3>La celebración de la Eucaristía</h3>
+                <label>Texto introductorio</label>
+                <textarea value={editingIntro} onChange={(event) => setEditingIntro(event.target.value)} rows="8" />
+                <div className="teacher-actions">
+                  <button className="primary-button" type="button" onClick={saveIntro} disabled={isSaving}>{isSaving ? 'Guardando...' : 'Guardar texto'}</button>
+                  <button className="secondary-button" type="button" onClick={() => setEditingIntro(null)}>Cancelar</button>
                 </div>
               </div>
             )}
@@ -664,6 +698,13 @@ export default function App() {
       return {};
     }
   });
+  const [introOverrides, setIntroOverrides] = useState(() => {
+    try {
+      return JSON.parse(localStorage.getItem(INTRO_OVERRIDES_KEY)) || [];
+    } catch {
+      return [];
+    }
+  });
   const [lockedSections, setLockedSections] = useState(() => {
     try {
       return JSON.parse(localStorage.getItem(LOCKED_SECTIONS_KEY)) || [];
@@ -672,6 +713,7 @@ export default function App() {
     }
   });
   const editableSections = applyTextOverrides(cloneMisaData(), textOverrides);
+  const introText = getIntroText(introOverrides);
   useEffect(() => {
     if (!isFirebaseConfigured || !auth) return undefined;
     return onAuthStateChanged(auth, (currentUser) => {
@@ -735,6 +777,7 @@ export default function App() {
     setActiveClass(nextClass);
     setLockedSections(nextClass.lockedSections || []);
     setTextOverrides(nextClass.textOverrides || {});
+    setIntroOverrides(nextClass.introOverrides || []);
     localStorage.setItem(ACTIVE_CLASS_KEY, nextClass.id);
   };
 
@@ -758,6 +801,7 @@ export default function App() {
       ownerEmail: teacher.email,
       lockedSections: [],
       textOverrides: getTextOverrides(cloneMisaData()),
+      introOverrides: celebrationIntro,
       createdAt: serverTimestamp(),
       updatedAt: serverTimestamp(),
     };
@@ -780,11 +824,12 @@ export default function App() {
     }, { merge: true });
   };
 
-  const saveClassState = async (nextLockedSections, nextTextOverrides = textOverrides) => {
+  const saveClassState = async (nextLockedSections, nextTextOverrides = textOverrides, nextIntroOverrides = introOverrides) => {
     if (!isFirebaseConfigured || !db || !activeClass) {
       if (isFirebaseConfigured) return;
       localStorage.setItem(LOCKED_SECTIONS_KEY, JSON.stringify(nextLockedSections));
       localStorage.setItem(TEXT_OVERRIDES_KEY, JSON.stringify(nextTextOverrides));
+      localStorage.setItem(INTRO_OVERRIDES_KEY, JSON.stringify(nextIntroOverrides));
       return;
     }
     setIsSaving(true);
@@ -792,6 +837,7 @@ export default function App() {
       await setDoc(doc(db, 'classes', activeClass.id), {
         lockedSections: nextLockedSections,
         textOverrides: nextTextOverrides,
+        introOverrides: nextIntroOverrides,
         updatedAt: serverTimestamp(),
       }, { merge: true });
     } finally {
@@ -821,6 +867,11 @@ export default function App() {
     await saveClassState(lockedSections, nextTextOverrides);
   };
 
+  const saveIntro = async (nextIntroOverrides) => {
+    setIntroOverrides(nextIntroOverrides);
+    await saveClassState(lockedSections, textOverrides, nextIntroOverrides);
+  };
+
   return (
     <div className="page-shell">
       {prayerModal && (
@@ -834,6 +885,7 @@ export default function App() {
           classes={classes}
           editableSections={editableSections}
           firebaseEnabled={isFirebaseConfigured}
+          introText={introText}
           isSaving={isSaving}
           lockedSections={lockedSections}
           onClose={() => setShowTeacherModal(false)}
@@ -842,6 +894,7 @@ export default function App() {
           onLogin={loginTeacher}
           onLogout={logoutTeacher}
           onAddTeacherEmail={addTeacherEmail}
+          onSaveIntro={saveIntro}
           onSaveText={saveText}
           onSelectClass={selectClass}
           onUnlockAll={() => saveLockedSections([])}
@@ -876,7 +929,7 @@ export default function App() {
           </div>
           <h2 className="eucaristia-heading">La celebración de la Eucaristía</h2>
           <div className="celebration-intro">
-            {celebrationIntro.map((paragraph, index) => <p key={index}>{paragraph}</p>)}
+            {introText.map((paragraph, index) => <p key={index}>{paragraph}</p>)}
           </div>
           <div className="sections-list">
             {editableSections.map((section) => (
