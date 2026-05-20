@@ -33,6 +33,11 @@ const TEACHER_PASSWORD = 'misa2026';
 const LOCKED_SECTIONS_KEY = 'misa-locked-sections';
 const ACTIVE_CLASS_KEY = 'misa-active-class';
 const TEXT_OVERRIDES_KEY = 'misa-text-overrides';
+const TEACHER_EMAILS = (import.meta.env.VITE_TEACHER_EMAILS || '')
+  .split(',')
+  .map((email) => email.trim().toLowerCase())
+  .filter(Boolean);
+const isAllowedTeacher = (user) => Boolean(user?.email && TEACHER_EMAILS.includes(user.email.toLowerCase()));
 
 // --- Estructura de Oraciones ---
 const prayers = {
@@ -244,6 +249,7 @@ function TeacherModal({
   onToggleSection,
   onUnlockAll,
   teacher,
+  teacherAllowed,
 }) {
   const [password, setPassword] = useState('');
   const [isTeacher, setIsTeacher] = useState(false);
@@ -252,7 +258,7 @@ function TeacherModal({
   const [editingCard, setEditingCard] = useState(null);
   const [editingText, setEditingText] = useState('');
   const [editingRemember, setEditingRemember] = useState('');
-  const canManage = firebaseEnabled ? Boolean(teacher) : isTeacher;
+  const canManage = firebaseEnabled ? Boolean(teacher && teacherAllowed) : isTeacher;
   const needsClass = firebaseEnabled && !activeClass;
   const classLink = activeClass ? `${window.location.origin}${BASE_URL}?class=${activeClass.id}` : '';
 
@@ -293,6 +299,13 @@ function TeacherModal({
           <div className="teacher-login">
             <p>Entra con tu cuenta de Google para guardar tus clases y usarlas desde otros ordenadores.</p>
             <button className="primary-button" type="button" onClick={onLogin}>Entrar con Google</button>
+          </div>
+        )}
+        {firebaseEnabled && teacher && !teacherAllowed && (
+          <div className="teacher-login">
+            <p className="teacher-error">Esta cuenta no tiene permiso de profesor.</p>
+            <p>Has entrado como {teacher.email}. Pide al administrador que añada este correo a la lista de profesores autorizados.</p>
+            <button className="secondary-button" type="button" onClick={onLogout}>Salir</button>
           </div>
         )}
         {!firebaseEnabled && !isTeacher ? (
@@ -625,6 +638,7 @@ export default function App() {
     }
   });
   const editableSections = applyTextOverrides(cloneMisaData(), textOverrides);
+  const teacherAllowed = isAllowedTeacher(teacher);
 
   useEffect(() => {
     if (!isFirebaseConfigured || !auth) return undefined;
@@ -644,7 +658,7 @@ export default function App() {
   }, []);
 
   useEffect(() => {
-    if (!isFirebaseConfigured || !db || !teacher) return;
+    if (!isFirebaseConfigured || !db || !teacher || !teacherAllowed) return;
 
     const loadClasses = async () => {
       const classesQuery = query(collection(db, 'classes'), where('ownerUid', '==', teacher.uid));
@@ -658,7 +672,7 @@ export default function App() {
     };
 
     loadClasses();
-  }, [teacher]);
+  }, [teacher, teacherAllowed]);
 
   const selectClass = async (classId, availableClasses = classes) => {
     const classDoc = availableClasses.find((classItem) => classItem.id === classId);
@@ -682,7 +696,7 @@ export default function App() {
   };
 
   const createClass = async (name) => {
-    if (!db || !teacher) return;
+    if (!db || !teacher || !teacherAllowed) return;
     const newClass = {
       name,
       ownerUid: teacher.uid,
@@ -765,6 +779,7 @@ export default function App() {
           onUnlockAll={() => saveLockedSections([])}
           onToggleSection={toggleLockedSection}
           teacher={teacher}
+          teacherAllowed={teacherAllowed}
         />
       )}
       {showCover ? (
