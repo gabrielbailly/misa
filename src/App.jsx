@@ -262,6 +262,8 @@ function TeacherModal({
   const [editingRemember, setEditingRemember] = useState('');
   const [newTeacherEmail, setNewTeacherEmail] = useState('');
   const [teacherEmailMessage, setTeacherEmailMessage] = useState('');
+  const [actionError, setActionError] = useState('');
+  const [isCreatingClass, setIsCreatingClass] = useState(false);
   const canManage = firebaseEnabled ? Boolean(teacher && teacherAllowed) : isTeacher;
   const needsClass = firebaseEnabled && !activeClass;
   const classLink = activeClass ? `${window.location.origin}${BASE_URL}?class=${activeClass.id}` : '';
@@ -279,8 +281,16 @@ function TeacherModal({
   const handleCreateClass = async (event) => {
     event.preventDefault();
     if (!className.trim()) return;
-    await onCreateClass(className.trim());
-    setClassName('');
+    setActionError('');
+    setIsCreatingClass(true);
+    try {
+      await onCreateClass(className.trim());
+      setClassName('');
+    } catch (error) {
+      setActionError(error.message || 'No se ha podido crear la clase.');
+    } finally {
+      setIsCreatingClass(false);
+    }
   };
 
   const startEditing = (card) => {
@@ -297,9 +307,14 @@ function TeacherModal({
   const addTeacherEmail = async (event) => {
     event.preventDefault();
     if (!newTeacherEmail.trim()) return;
-    await onAddTeacherEmail(newTeacherEmail.trim());
-    setTeacherEmailMessage(`${newTeacherEmail.trim()} ya puede entrar como profesor.`);
-    setNewTeacherEmail('');
+    setActionError('');
+    try {
+      await onAddTeacherEmail(newTeacherEmail.trim());
+      setTeacherEmailMessage(`${newTeacherEmail.trim()} ya puede entrar como profesor.`);
+      setNewTeacherEmail('');
+    } catch (error) {
+      setActionError(error.message || 'No se ha podido añadir el profesor.');
+    }
   };
 
   return (
@@ -345,8 +360,9 @@ function TeacherModal({
                 {teacherEmailMessage && <p className="teacher-success">{teacherEmailMessage}</p>}
                 <form className="teacher-class-form" onSubmit={handleCreateClass}>
                   <input value={className} onChange={(event) => setClassName(event.target.value)} placeholder="Nueva clase, por ejemplo 4ºA" />
-                  <button className="primary-button" type="submit">Crear clase</button>
+                  <button className="primary-button" type="submit" disabled={isCreatingClass}>{isCreatingClass ? 'Creando...' : 'Crear clase'}</button>
                 </form>
+                {actionError && <p className="teacher-error">{actionError}</p>}
                 <div className="teacher-class-list">
                   {classes.map((classItem) => (
                     <button className={activeClass?.id === classItem.id ? 'teacher-class active' : 'teacher-class'} key={classItem.id} type="button" onClick={() => onSelectClass(classItem.id)}>
@@ -733,7 +749,9 @@ export default function App() {
   };
 
   const createClass = async (name) => {
-    if (!db || !teacher || !teacherAllowed) return;
+    if (!db) throw new Error('Firebase no está conectado.');
+    if (!teacher) throw new Error('Tienes que entrar con Google para crear una clase.');
+    if (!teacherAllowed) throw new Error('Esta cuenta no tiene permiso para crear clases.');
     const newClass = {
       name,
       ownerUid: teacher.uid,
@@ -751,7 +769,9 @@ export default function App() {
   };
 
   const addTeacherEmail = async (email) => {
-    if (!db || !teacher || !teacherAllowed) return;
+    if (!db) throw new Error('Firebase no está conectado.');
+    if (!teacher) throw new Error('Tienes que entrar con Google para añadir profesores.');
+    if (!teacherAllowed) throw new Error('Esta cuenta no tiene permiso para añadir profesores.');
     const normalizedEmail = normalizeEmail(email);
     await setDoc(doc(db, 'teachers', normalizedEmail), {
       email: normalizedEmail,

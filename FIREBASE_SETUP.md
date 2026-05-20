@@ -41,3 +41,5 @@ service cloud.firestore {
 ```
 
 Los alumnos pueden leer una clase con el enlace `?class=ID`. Solo el profesor propietario puede crear o editar sus clases.
+
+Si al pulsar `Crear clase` aparece un error de permisos, revisa que tu correo este incluido en la funcion `isTeacher()` de estas reglas, o crea manualmente un documento en `teachers` con ID igual a tu correo en minusculas.
