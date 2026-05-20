@@ -14,13 +14,21 @@ rules_version = '2';
 service cloud.firestore {
   function isTeacher() {
     return request.auth != null
-      && request.auth.token.email in [
+      && (
+      request.auth.token.email in [
         'profesor1@colegio.es',
         'profesor2@colegio.es'
-      ];
+      ]
+      || exists(/databases/$(database)/documents/teachers/$(request.auth.token.email))
+      );
   }
 
   match /databases/{database}/documents {
+    match /teachers/{email} {
+      allow read: if request.auth != null;
+      allow create, update, delete: if isTeacher();
+    }
+
     match /classes/{classId} {
       allow read: if true;
       allow create: if isTeacher()

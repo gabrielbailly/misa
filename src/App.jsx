@@ -37,7 +37,8 @@ const TEACHER_EMAILS = (import.meta.env.VITE_TEACHER_EMAILS || '')
   .split(',')
   .map((email) => email.trim().toLowerCase())
   .filter(Boolean);
-const isAllowedTeacher = (user) => Boolean(user?.email && TEACHER_EMAILS.includes(user.email.toLowerCase()));
+const normalizeEmail = (email) => email.trim().toLowerCase();
+const isBootstrapTeacher = (user) => Boolean(user?.email && TEACHER_EMAILS.includes(normalizeEmail(user.email)));
 
 // --- Estructura de Oraciones ---
 const prayers = {
@@ -244,6 +245,7 @@ function TeacherModal({
   onLockAll,
   onLogin,
   onLogout,
+  onAddTeacherEmail,
   onSaveText,
   onSelectClass,
   onToggleSection,
@@ -258,6 +260,8 @@ function TeacherModal({
   const [editingCard, setEditingCard] = useState(null);
   const [editingText, setEditingText] = useState('');
   const [editingRemember, setEditingRemember] = useState('');
+  const [newTeacherEmail, setNewTeacherEmail] = useState('');
+  const [teacherEmailMessage, setTeacherEmailMessage] = useState('');
   const canManage = firebaseEnabled ? Boolean(teacher && teacherAllowed) : isTeacher;
   const needsClass = firebaseEnabled && !activeClass;
   const classLink = activeClass ? `${window.location.origin}${BASE_URL}?class=${activeClass.id}` : '';
@@ -288,6 +292,14 @@ function TeacherModal({
   const saveEditing = async () => {
     await onSaveText(editingCard, editingText, editingRemember);
     setEditingCard(null);
+  };
+
+  const addTeacherEmail = async (event) => {
+    event.preventDefault();
+    if (!newTeacherEmail.trim()) return;
+    await onAddTeacherEmail(newTeacherEmail.trim());
+    setTeacherEmailMessage(`${newTeacherEmail.trim()} ya puede entrar como profesor.`);
+    setNewTeacherEmail('');
   };
 
   return (
@@ -326,6 +338,11 @@ function TeacherModal({
             )}
             {firebaseEnabled && (
               <>
+                <form className="teacher-class-form" onSubmit={addTeacherEmail}>
+                  <input value={newTeacherEmail} onChange={(event) => setNewTeacherEmail(event.target.value)} placeholder="Correo de otro profesor" type="email" />
+                  <button className="primary-button" type="submit">Añadir profesor</button>
+                </form>
+                {teacherEmailMessage && <p className="teacher-success">{teacherEmailMessage}</p>}
                 <form className="teacher-class-form" onSubmit={handleCreateClass}>
                   <input value={className} onChange={(event) => setClassName(event.target.value)} placeholder="Nueva clase, por ejemplo 4ºA" />
                   <button className="primary-button" type="submit">Crear clase</button>
@@ -620,6 +637,7 @@ export default function App() {
   const [showAppInfo, setShowAppInfo] = useState(false);
   const [showTeacherModal, setShowTeacherModal] = useState(false);
   const [teacher, setTeacher] = useState(null);
+  const [teacherAllowed, setTeacherAllowed] = useState(false);
   const [classes, setClasses] = useState([]);
   const [activeClass, setActiveClass] = useState(null);
   const [isSaving, setIsSaving] = useState(false);
@@ -638,8 +656,6 @@ export default function App() {
     }
   });
   const editableSections = applyTextOverrides(cloneMisaData(), textOverrides);
-  const teacherAllowed = isAllowedTeacher(teacher);
-
   useEffect(() => {
     if (!isFirebaseConfigured || !auth) return undefined;
     return onAuthStateChanged(auth, (currentUser) => {
@@ -647,9 +663,30 @@ export default function App() {
       if (!currentUser) {
         setClasses([]);
         setActiveClass(null);
+        setTeacherAllowed(false);
       }
     });
   }, []);
+
+  useEffect(() => {
+    if (!isFirebaseConfigured || !db || !teacher) return;
+
+    const checkTeacherAccess = async () => {
+      if (isBootstrapTeacher(teacher)) {
+        setTeacherAllowed(true);
+        return;
+      }
+      const email = normalizeEmail(teacher.email || '');
+      if (!email) {
+        setTeacherAllowed(false);
+        return;
+      }
+      const teacherDoc = await getDoc(doc(db, 'teachers', email));
+      setTeacherAllowed(teacherDoc.exists());
+    };
+
+    checkTeacherAccess();
+  }, [teacher]);
 
   useEffect(() => {
     if (!isFirebaseConfigured || !db) return;
@@ -713,6 +750,16 @@ export default function App() {
     await selectClass(created.id, nextClasses);
   };
 
+  const addTeacherEmail = async (email) => {
+    if (!db || !teacher || !teacherAllowed) return;
+    const normalizedEmail = normalizeEmail(email);
+    await setDoc(doc(db, 'teachers', normalizedEmail), {
+      email: normalizedEmail,
+      createdBy: teacher.email,
+      createdAt: serverTimestamp(),
+    }, { merge: true });
+  };
+
   const saveClassState = async (nextLockedSections, nextTextOverrides = textOverrides) => {
     if (!isFirebaseConfigured || !db || !activeClass) {
       if (isFirebaseConfigured) return;
@@ -774,6 +821,7 @@ export default function App() {
           onLockAll={() => saveLockedSections(misaData.map((section) => section.id))}
           onLogin={loginTeacher}
           onLogout={logoutTeacher}
+          onAddTeacherEmail={addTeacherEmail}
           onSaveText={saveText}
           onSelectClass={selectClass}
           onUnlockAll={() => saveLockedSections([])}
