@@ -3,11 +3,12 @@
 1. Crea un proyecto en Firebase Console.
 2. Activa Authentication con proveedor Google.
 3. Activa Firestore Database.
-4. Anade `https://gabrielbailly.github.io` en Authentication > Settings > Authorized domains.
-5. Copia `.env.example` como `.env.local` y rellena las claves de la app web Firebase.
-6. Anade esas mismas claves como GitHub Secrets con los nombres `VITE_FIREBASE_*` de `.env.example`.
-7. Anade tambien el secret `VITE_TEACHER_EMAILS` con los correos autorizados separados por coma, por ejemplo `profesor1@colegio.es,profesor2@colegio.es`.
-8. Usa estas reglas iniciales en Firestore, cambiando los correos por los profesores autorizados:
+4. Activa Firebase Storage.
+5. Anade `https://gabrielbailly.github.io` en Authentication > Settings > Authorized domains.
+6. Copia `.env.example` como `.env.local` y rellena las claves de la app web Firebase.
+7. Anade esas mismas claves como GitHub Secrets con los nombres `VITE_FIREBASE_*` de `.env.example`.
+8. Anade tambien el secret `VITE_TEACHER_EMAILS` con los correos autorizados separados por coma, por ejemplo `profesor1@colegio.es,profesor2@colegio.es`.
+9. Usa estas reglas iniciales en Firestore, cambiando los correos por los profesores autorizados:
 
 ```js
 rules_version = '2';
@@ -35,6 +36,21 @@ service cloud.firestore {
         && request.resource.data.ownerUid == request.auth.uid;
       allow update, delete: if isTeacher()
         && resource.data.ownerUid == request.auth.uid;
+    }
+  }
+}
+```
+
+10. Usa estas reglas iniciales en Storage:
+
+```js
+rules_version = '2';
+
+service firebase.storage {
+  match /b/{bucket}/o {
+    match /classes/{classId}/{allPaths=**} {
+      allow read: if true;
+      allow write: if request.auth != null;
     }
   }
 }

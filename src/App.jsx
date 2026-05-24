@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { onAuthStateChanged, signInWithPopup, signOut } from 'firebase/auth';
 import { addDoc, collection, doc, getDoc, getDocs, query, serverTimestamp, setDoc, where } from 'firebase/firestore';
+import { getDownloadURL, ref, uploadBytes } from 'firebase/storage';
 import {
   ArrowRight,
   BookOpen,
@@ -24,7 +25,7 @@ import {
   X,
   ScrollText
 } from 'lucide-react';
-import { auth, db, googleProvider, isFirebaseConfigured } from './firebase';
+import { auth, db, googleProvider, isFirebaseConfigured, storage } from './firebase';
 
 // Ajuste para GitHub Pages
 const BASE_URL = import.meta.env.BASE_URL || '/';
@@ -35,6 +36,8 @@ const ACTIVE_CLASS_KEY = 'misa-active-class';
 const TEXT_OVERRIDES_KEY = 'misa-text-overrides';
 const INTRO_OVERRIDES_KEY = 'misa-intro-overrides';
 const ACTIVITY_OVERRIDES_KEY = 'misa-activity-overrides';
+const IMAGE_OVERRIDES_KEY = 'misa-image-overrides';
+const INTRO_IMAGE_KEY = 'misa-intro-image';
 const TEACHER_EMAILS = (import.meta.env.VITE_TEACHER_EMAILS || '')
   .split(',')
   .map((email) => email.trim().toLowerCase())
@@ -188,6 +191,18 @@ const applyActivityOverrides = (sections, activityOverrides = {}) => sections.ma
   })),
 }));
 
+const applyImageOverrides = (sections, imageOverrides = {}) => sections.map((section) => ({
+  ...section,
+  cards: section.cards.map((card) => {
+    const override = imageOverrides[card.title];
+    if (!override) return card;
+    return {
+      ...card,
+      image: override.hidden ? '' : override.image || card.image,
+    };
+  }),
+}));
+
 const getTextOverrides = (sections) => sections.reduce((overrides, section) => {
   section.cards.forEach((card) => {
     overrides[card.title] = { text: card.text, remember: card.remember };
@@ -252,6 +267,7 @@ function TeacherModal({
   firebaseEnabled,
   introText,
   isSaving,
+  isUploadingImage,
   lockedSections,
   onClose,
   onCreateClass,
@@ -260,6 +276,8 @@ function TeacherModal({
   onLogout,
   onAddTeacherEmail,
   onSaveActivities,
+  onSaveCardImage,
+  onSaveIntroImage,
   onSaveIntro,
   onSaveText,
   onSelectClass,
@@ -346,6 +364,30 @@ function TeacherModal({
       setEditingActivitiesCard(null);
     } catch (error) {
       setActionError(error.message || 'No se han podido guardar las actividades.');
+    }
+  };
+
+  const uploadCardImage = async (cardTitle, event) => {
+    const file = event.target.files?.[0];
+    event.target.value = '';
+    if (!file) return;
+    setActionError('');
+    try {
+      await onSaveCardImage(cardTitle, file);
+    } catch (error) {
+      setActionError(error.message || 'No se ha podido subir la imagen.');
+    }
+  };
+
+  const uploadIntroImage = async (event) => {
+    const file = event.target.files?.[0];
+    event.target.value = '';
+    if (!file) return;
+    setActionError('');
+    try {
+      await onSaveIntroImage(file);
+    } catch (error) {
+      setActionError(error.message || 'No se ha podido subir la imagen.');
     }
   };
 
@@ -446,7 +488,14 @@ function TeacherModal({
                 <strong>La celebración de la Eucaristía</strong>
                 <div className="teacher-edit-card">
                   <span>Texto introductorio</span>
-                  <button className="secondary-button" type="button" onClick={startEditingIntro} disabled={needsClass}>Editar</button>
+                  <div className="teacher-edit-actions">
+                    <button className="secondary-button" type="button" onClick={startEditingIntro} disabled={needsClass}>Editar texto</button>
+                    <label className="secondary-button upload-button">
+                      {isUploadingImage ? 'Subiendo...' : 'Cambiar imagen'}
+                      <input accept="image/*" disabled={needsClass || isUploadingImage} onChange={uploadIntroImage} type="file" />
+                    </label>
+                    <button className="secondary-button" type="button" onClick={() => onSaveIntroImage(null)} disabled={needsClass || isUploadingImage}>Eliminar imagen</button>
+                  </div>
                 </div>
               </div>
               {editableSections.map((section) => (
@@ -458,6 +507,11 @@ function TeacherModal({
                       <div className="teacher-edit-actions">
                         <button className="secondary-button" type="button" onClick={() => startEditing(card)} disabled={needsClass}>Editar texto</button>
                         <button className="secondary-button" type="button" onClick={() => startEditingActivities(card)} disabled={needsClass}>Editar actividades</button>
+                        <label className="secondary-button upload-button">
+                          {isUploadingImage ? 'Subiendo...' : 'Cambiar imagen'}
+                          <input accept="image/*" disabled={needsClass || isUploadingImage} onChange={(event) => uploadCardImage(card.title, event)} type="file" />
+                        </label>
+                        <button className="secondary-button" type="button" onClick={() => onSaveCardImage(card.title, null)} disabled={needsClass || isUploadingImage}>Eliminar imagen</button>
                       </div>
                     </div>
                   ))}
@@ -616,7 +670,7 @@ function LessonCard({ card, current, total, onOpenPrayer }) {
   return (
     <article className="lesson-card">
       <div className="card-counter">{current} de {total}</div>
-      <img src={card.image} alt={card.title} className="lesson-image" />
+      {card.image && <img src={card.image} alt={card.title} className="lesson-image" />}
       <div className="lesson-copy">
         <div className="lesson-title"><span className="timeline-icon"><Icon size={18} /></span><h3>{card.title}</h3></div>
         <p>{card.text}</p>
@@ -735,6 +789,7 @@ export default function App() {
   const [classes, setClasses] = useState([]);
   const [activeClass, setActiveClass] = useState(null);
   const [isSaving, setIsSaving] = useState(false);
+  const [isUploadingImage, setIsUploadingImage] = useState(false);
   const [textOverrides, setTextOverrides] = useState(() => {
     try {
       return JSON.parse(localStorage.getItem(TEXT_OVERRIDES_KEY)) || {};
@@ -756,6 +811,20 @@ export default function App() {
       return {};
     }
   });
+  const [imageOverrides, setImageOverrides] = useState(() => {
+    try {
+      return JSON.parse(localStorage.getItem(IMAGE_OVERRIDES_KEY)) || {};
+    } catch {
+      return {};
+    }
+  });
+  const [introImage, setIntroImage] = useState(() => {
+    try {
+      return localStorage.getItem(INTRO_IMAGE_KEY) || '';
+    } catch {
+      return '';
+    }
+  });
   const [lockedSections, setLockedSections] = useState(() => {
     try {
       return JSON.parse(localStorage.getItem(LOCKED_SECTIONS_KEY)) || [];
@@ -763,7 +832,7 @@ export default function App() {
       return [];
     }
   });
-  const editableSections = applyActivityOverrides(applyTextOverrides(cloneMisaData(), textOverrides), activityOverrides);
+  const editableSections = applyImageOverrides(applyActivityOverrides(applyTextOverrides(cloneMisaData(), textOverrides), activityOverrides), imageOverrides);
   const introText = getIntroText(introOverrides);
   useEffect(() => {
     if (!isFirebaseConfigured || !auth) return undefined;
@@ -830,6 +899,8 @@ export default function App() {
     setTextOverrides(nextClass.textOverrides || {});
     setIntroOverrides(nextClass.introOverrides || []);
     setActivityOverrides(nextClass.activityOverrides || {});
+    setImageOverrides(nextClass.imageOverrides || {});
+    setIntroImage(nextClass.introImage || '');
     localStorage.setItem(ACTIVE_CLASS_KEY, nextClass.id);
   };
 
@@ -855,6 +926,8 @@ export default function App() {
       textOverrides: getTextOverrides(cloneMisaData()),
       introOverrides: celebrationIntro,
       activityOverrides: cardActivities,
+      imageOverrides: {},
+      introImage: '',
       createdAt: serverTimestamp(),
       updatedAt: serverTimestamp(),
     };
@@ -877,13 +950,22 @@ export default function App() {
     }, { merge: true });
   };
 
-  const saveClassState = async (nextLockedSections, nextTextOverrides = textOverrides, nextIntroOverrides = introOverrides, nextActivityOverrides = activityOverrides) => {
+  const saveClassState = async (
+    nextLockedSections,
+    nextTextOverrides = textOverrides,
+    nextIntroOverrides = introOverrides,
+    nextActivityOverrides = activityOverrides,
+    nextImageOverrides = imageOverrides,
+    nextIntroImage = introImage
+  ) => {
     if (!isFirebaseConfigured || !db || !activeClass) {
       if (isFirebaseConfigured) return;
       localStorage.setItem(LOCKED_SECTIONS_KEY, JSON.stringify(nextLockedSections));
       localStorage.setItem(TEXT_OVERRIDES_KEY, JSON.stringify(nextTextOverrides));
       localStorage.setItem(INTRO_OVERRIDES_KEY, JSON.stringify(nextIntroOverrides));
       localStorage.setItem(ACTIVITY_OVERRIDES_KEY, JSON.stringify(nextActivityOverrides));
+      localStorage.setItem(IMAGE_OVERRIDES_KEY, JSON.stringify(nextImageOverrides));
+      localStorage.setItem(INTRO_IMAGE_KEY, nextIntroImage);
       return;
     }
     setIsSaving(true);
@@ -893,6 +975,8 @@ export default function App() {
         textOverrides: nextTextOverrides,
         introOverrides: nextIntroOverrides,
         activityOverrides: nextActivityOverrides,
+        imageOverrides: nextImageOverrides,
+        introImage: nextIntroImage,
         updatedAt: serverTimestamp(),
       }, { merge: true });
     } finally {
@@ -936,6 +1020,41 @@ export default function App() {
     await saveClassState(lockedSections, textOverrides, introOverrides, nextActivityOverrides);
   };
 
+  const uploadImage = async (file, folder) => {
+    if (!storage) throw new Error('Firebase Storage no está conectado.');
+    if (!activeClass) throw new Error('Selecciona o crea una clase antes de subir imágenes.');
+    const safeName = file.name.replace(/[^a-zA-Z0-9._-]/g, '-');
+    const storagePath = `classes/${activeClass.id}/${folder}/${Date.now()}-${safeName}`;
+    const imageRef = ref(storage, storagePath);
+    await uploadBytes(imageRef, file);
+    return getDownloadURL(imageRef);
+  };
+
+  const saveCardImage = async (cardTitle, file) => {
+    setIsUploadingImage(true);
+    try {
+      const nextImageOverrides = {
+        ...imageOverrides,
+        [cardTitle]: file ? { image: await uploadImage(file, 'cards'), hidden: false } : { image: '', hidden: true },
+      };
+      setImageOverrides(nextImageOverrides);
+      await saveClassState(lockedSections, textOverrides, introOverrides, activityOverrides, nextImageOverrides, introImage);
+    } finally {
+      setIsUploadingImage(false);
+    }
+  };
+
+  const saveIntroImage = async (file) => {
+    setIsUploadingImage(true);
+    try {
+      const nextIntroImage = file ? await uploadImage(file, 'intro') : '';
+      setIntroImage(nextIntroImage);
+      await saveClassState(lockedSections, textOverrides, introOverrides, activityOverrides, imageOverrides, nextIntroImage);
+    } finally {
+      setIsUploadingImage(false);
+    }
+  };
+
   return (
     <div className="page-shell">
       {prayerModal && (
@@ -950,6 +1069,7 @@ export default function App() {
           editableSections={editableSections}
           firebaseEnabled={isFirebaseConfigured}
           introText={introText}
+          isUploadingImage={isUploadingImage}
           isSaving={isSaving}
           lockedSections={lockedSections}
           onClose={() => setShowTeacherModal(false)}
@@ -959,6 +1079,8 @@ export default function App() {
           onLogout={logoutTeacher}
           onAddTeacherEmail={addTeacherEmail}
           onSaveActivities={saveActivities}
+          onSaveCardImage={saveCardImage}
+          onSaveIntroImage={saveIntroImage}
           onSaveIntro={saveIntro}
           onSaveText={saveText}
           onSelectClass={selectClass}
@@ -994,6 +1116,7 @@ export default function App() {
           </div>
           <h2 className="eucaristia-heading">La celebración de la Eucaristía</h2>
           <div className="celebration-intro">
+            {introImage && <img src={introImage} alt="La celebración de la Eucaristía" className="intro-image" />}
             {introText.map((paragraph, index) => <p key={index}>{paragraph}</p>)}
           </div>
           <div className="sections-list">
