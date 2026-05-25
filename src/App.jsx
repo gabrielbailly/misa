@@ -197,6 +197,44 @@ const getTextOverrides = (sections) => sections.reduce((overrides, section) => {
 
 const getIntroText = (introOverrides) => introOverrides?.length ? introOverrides : celebrationIntro;
 
+const renderInlineFormatting = (text) => {
+  const parts = String(text).split(/(\*\*[^*]+\*\*|\*[^*]+\*)/g);
+  return parts.map((part, index) => {
+    if (part.startsWith('**') && part.endsWith('**')) return <strong key={index}>{part.slice(2, -2)}</strong>;
+    if (part.startsWith('*') && part.endsWith('*')) return <em key={index}>{part.slice(1, -1)}</em>;
+    return part;
+  });
+};
+
+function FormattedText({ text }) {
+  const lines = String(text || '').split('\n');
+  const blocks = [];
+  let listItems = [];
+
+  const flushList = () => {
+    if (!listItems.length) return;
+    blocks.push(<ul key={`list-${blocks.length}`}>{listItems.map((item, index) => <li key={index}>{renderInlineFormatting(item)}</li>)}</ul>);
+    listItems = [];
+  };
+
+  lines.forEach((line) => {
+    const trimmedLine = line.trim();
+    if (!trimmedLine) {
+      flushList();
+      return;
+    }
+    if (trimmedLine.startsWith('- ')) {
+      listItems.push(trimmedLine.slice(2));
+      return;
+    }
+    flushList();
+    blocks.push(<p key={`p-${blocks.length}`}>{renderInlineFormatting(trimmedLine)}</p>);
+  });
+  flushList();
+
+  return <div className="formatted-text">{blocks}</div>;
+}
+
 // --- Componentes ---
 
 function PrayerModal({ prayerTitle, prayerLines, onClose }) {
@@ -491,6 +529,7 @@ function TeacherModal({
             {editingCard && (
               <div className="teacher-inline-editor">
                 <h3>{editingCard}</h3>
+                <p className="format-help">Formato: <strong>**negrita**</strong>, <em>*cursiva*</em> y líneas que empiezan por <strong>- </strong> para listas.</p>
                 <label>Texto principal</label>
                 <textarea value={editingText} onChange={(event) => setEditingText(event.target.value)} rows="5" />
                 <label>Recuerda</label>
@@ -504,6 +543,7 @@ function TeacherModal({
             {editingIntro !== null && (
               <div className="teacher-inline-editor">
                 <h3>La celebración de la Eucaristía</h3>
+                <p className="format-help">Formato: <strong>**negrita**</strong>, <em>*cursiva*</em> y líneas que empiezan por <strong>- </strong> para listas.</p>
                 <label>Texto introductorio</label>
                 <textarea value={editingIntro} onChange={(event) => setEditingIntro(event.target.value)} rows="8" />
                 <div className="teacher-actions">
@@ -702,7 +742,7 @@ function LessonCard({ card, current, total, onOpenPrayer }) {
       {card.image && <img src={card.image} alt={card.title} className="lesson-image" />}
       <div className="lesson-copy">
         <div className="lesson-title"><span className="timeline-icon"><Icon size={18} /></span><h3>{card.title}</h3></div>
-        <p>{card.text}</p>
+        <FormattedText text={card.text} />
         {card.prayer && (
           <button className="prayer-button" onClick={() => onOpenPrayer(card.prayer)}><ScrollText size={18} /> Ver oración</button>
         )}
@@ -715,7 +755,7 @@ function LessonCard({ card, current, total, onOpenPrayer }) {
           </div>
         )}
         <div className="remember-box">
-          <CheckCircle2 size={18} /> <strong>Recuerda:</strong> {card.remember}
+          <CheckCircle2 size={18} /> <strong>Recuerda:</strong> <FormattedText text={card.remember} />
         </div>
       </div>
     </article>
@@ -1082,7 +1122,7 @@ export default function App() {
           </div>
           <h2 className="eucaristia-heading">La celebración de la Eucaristía</h2>
           <div className="celebration-intro">
-            {introText.map((paragraph, index) => <p key={index}>{paragraph}</p>)}
+            <FormattedText text={introText.join('\n')} />
           </div>
           <div className="sections-list">
             {editableSections.map((section) => (
