@@ -1320,6 +1320,7 @@ export default function App() {
           </div>
           <h2 className="eucaristia-heading">La celebración de la Eucaristía</h2>
           <div className="celebration-intro">
+            <img className="celebration-intro-image" src={asset('/fotos/jesus-crucificado.jpg')} alt="Jesús crucificado" />
             <FormattedText text={introText.join('\n')} />
           </div>
           <div className="sections-list">
