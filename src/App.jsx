@@ -368,6 +368,8 @@ function TeacherModal({
   const textTextareaRef = useRef(null);
   const rememberTextareaRef = useRef(null);
   const introTextareaRef = useRef(null);
+  const textEditorRef = useRef(null);
+  const introEditorRef = useRef(null);
   const canManage = firebaseEnabled ? Boolean(teacher && teacherAllowed) : isTeacher;
   const needsClass = firebaseEnabled && !activeClass;
   const classLink = activeClass ? `${window.location.origin}${BASE_URL}?class=${activeClass.id}` : '';
@@ -469,6 +471,26 @@ function TeacherModal({
       setActionError(error.message || 'No se ha podido añadir el profesor.');
     }
   };
+
+  useEffect(() => {
+    if (!editingCard) return;
+    window.setTimeout(() => {
+      textEditorRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      textTextareaRef.current?.focus();
+      const textLength = textTextareaRef.current?.value.length || 0;
+      textTextareaRef.current?.setSelectionRange(textLength, textLength);
+    }, 0);
+  }, [editingCard]);
+
+  useEffect(() => {
+    if (editingIntro === null) return;
+    window.setTimeout(() => {
+      introEditorRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      introTextareaRef.current?.focus();
+      const textLength = introTextareaRef.current?.value.length || 0;
+      introTextareaRef.current?.setSelectionRange(textLength, textLength);
+    }, 0);
+  }, [editingIntro]);
 
   return (
     <div className="modal-overlay" onClick={onClose}>
@@ -575,7 +597,7 @@ function TeacherModal({
               ))}
             </div>
             {editingCard && (
-              <div className="teacher-inline-editor">
+              <div className="teacher-inline-editor" ref={textEditorRef}>
                 <h3>{editingCard}</h3>
                 <label>Texto principal</label>
                 <FormatToolbar textareaRef={textTextareaRef} value={editingText} onChange={setEditingText} />
@@ -590,7 +612,7 @@ function TeacherModal({
               </div>
             )}
             {editingIntro !== null && (
-              <div className="teacher-inline-editor">
+              <div className="teacher-inline-editor" ref={introEditorRef}>
                 <h3>La celebración de la Eucaristía</h3>
                 <label>Texto introductorio</label>
                 <FormatToolbar textareaRef={introTextareaRef} value={editingIntro} onChange={setEditingIntro} />
