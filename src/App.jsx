@@ -92,6 +92,25 @@ const appInfo = [
 ];
 
 const cardActivities = {
+  'Lugar de la celebración': [
+    { type: 'quiz', prompt: '¿Qué es la iglesia?', options: ['Un lugar sagrado donde nos reunimos los cristianos', 'Una sala cualquiera para reuniones', 'Un lugar solo para mirar imágenes'], answer: 'Un lugar sagrado donde nos reunimos los cristianos' },
+    { type: 'match', prompt: 'Relaciona cada idea.', pairs: [['Iglesia', 'Casa de Dios'], ['Silencio', 'Señal de respeto y veneración'], ['Eucaristía', 'Celebración principal de los cristianos']] },
+  ],
+  'Partes de la iglesia': [
+    { type: 'quiz', prompt: '¿Dónde se proclama la Palabra de Dios?', options: ['En el ambón', 'En la nave', 'En las vinajeras'], answer: 'En el ambón' },
+    { type: 'match', prompt: 'Une cada parte con su significado.', pairs: [['Altar', 'Mesa donde se celebra el sacrificio de Jesús'], ['Ambón', 'Lugar desde donde se proclama la Palabra'], ['Nave', 'Lugar donde se sitúan los fieles'], ['Presbiterio', 'Espacio principal donde está el altar']] },
+    { type: 'order', prompt: 'Ordena desde la entrada hacia el lugar principal.', steps: ['Nave', 'Presbiterio', 'Altar'] },
+  ],
+  'Ornamentos y posturas': [
+    { type: 'quiz', prompt: '¿Para qué se reviste el sacerdote con ornamentos?', options: ['Para celebrar los sacramentos representando a Jesús', 'Para distinguirse por gusto personal', 'Para que la Misa sea más larga'], answer: 'Para celebrar los sacramentos representando a Jesús' },
+    { type: 'match', prompt: 'Relaciona cada postura con su sentido.', pairs: [['De pie', 'Respeto y veneración'], ['Sentados', 'Escuchar y reflexionar'], ['Arrodillarse', 'Adorar al Señor'], ['Responder', 'Unirse a la oración del sacerdote']] },
+    { type: 'match', prompt: 'Relaciona cada color litúrgico.', pairs: [['Blanco', 'Fiesta'], ['Verde', 'Esperanza'], ['Rojo', 'Sangre y fuego'], ['Morado', 'Penitencia']] },
+  ],
+  'Objetos litúrgicos': [
+    { type: 'quiz', prompt: '¿Por qué los objetos litúrgicos son especiales?', options: ['Porque estarán en contacto con el Cuerpo y la Sangre de Jesús', 'Porque son adornos sin importancia', 'Porque se usan fuera de la iglesia'], answer: 'Porque estarán en contacto con el Cuerpo y la Sangre de Jesús' },
+    { type: 'match', prompt: 'Relaciona cada objeto con su función.', pairs: [['Cáliz', 'Copa para la Sangre de Cristo'], ['Patena', 'Platillo para el pan que será consagrado'], ['Copón', 'Recipiente para guardar formas consagradas'], ['Vinajeras', 'Contienen agua y vino'], ['Corporal', 'Lienzo que se coloca sobre el altar']] },
+    { type: 'order', prompt: 'Ordena cómo se preparan algunos dones.', steps: ['Se presentan el pan y el vino', 'Se colocan sobre el altar', 'Serán consagrados en la Misa'] },
+  ],
   'Introito y acto penitencial': [
     { type: 'quiz', prompt: '¿Para qué nos reunimos en la Misa?', options: ['Para celebrar la Pasión, Muerte y Resurrección de Jesús', 'Para escuchar solo unas lecturas', 'Para hacer una oración privada sin la Iglesia'], answer: 'Para celebrar la Pasión, Muerte y Resurrección de Jesús' },
     { type: 'match', prompt: 'Relaciona cada expresión con su significado.', pairs: [['Jesús sale a nuestro encuentro', 'Él nos reúne en la Misa'], ['Acto penitencial', 'Nos preparamos para el encuentro'], ['Pueblo de Dios', 'La familia que Jesús convoca']] },
@@ -844,7 +863,7 @@ function SectionCard({ section, isOpen, isLocked, onToggle, onOpenPrayer }) {
       <button className="section-head" onClick={handleToggle} aria-expanded={isOpen && !isLocked} aria-disabled={isLocked}>
         <span className="icon-bubble"><Icon size={30} /></span>
         <span className="section-title-wrap">
-          <span className="eyebrow">Parte {section.id + 1}</span>
+          <span className="eyebrow">Parte {section.id === -1 ? 0 : section.id + 1}</span>
           <span className="section-title">{section.title}</span>
           {isLocked && <span className="locked-label">Bloqueada por el profesor</span>}
         </span>
@@ -862,13 +881,36 @@ function SectionCard({ section, isOpen, isLocked, onToggle, onOpenPrayer }) {
             <button className={index === activeCard ? 'dot active' : 'dot'} key={index} onClick={() => setActiveCard(index)} />
           ))}
         </div>
-        <CardActivities card={card} />
+        <CardActivities key={card.title} card={card} />
       </div>
     </article>
   );
 }
 
 const misaData = [
+  {
+    id: -1,
+    title: 'Lugar de la celebración y ornamentos',
+    icon: Sparkles,
+    description: 'Conocemos el templo, las posturas, los ornamentos y los objetos litúrgicos.',
+    cards: [
+      { title: 'Lugar de la celebración', icon: Sparkles, image: asset('/fotos/interior iglesia.jpg'), text: 'La iglesia es un lugar sagrado donde nos reunimos los cristianos para celebrar los sacramentos, especialmente la Eucaristía. Dios está presente en cada iglesia; por eso estamos en silencio, con respeto y veneración. La iglesia es la casa de Dios.', remember: 'La iglesia es la casa de Dios y un lugar sagrado para celebrar la Eucaristía.' },
+      { title: 'Partes de la iglesia', icon: BookOpen, image: asset('/fotos/Igl.Corpus Cristi (interior).jpg'), text: `En la iglesia encontramos varias partes importantes:
+- **Altar**: mesa donde se realiza el sacrificio de Jesús.
+- **Ambón**: lugar desde donde se proclama la Palabra de Dios.
+- **Nave**: lugar donde se sitúan los fieles.
+- **Presbiterio**: espacio principal donde están el altar y la sede.`, remember: 'El altar, el ambón, la nave y el presbiterio nos ayudan a vivir mejor la celebración.' },
+      { title: 'Ornamentos y posturas', icon: Users, image: asset('/fotos/casullas.jpg'), text: `El sacerdote se reviste con ornamentos litúrgicos para celebrar los sacramentos. Cuando vemos al sacerdote revestido, recordamos que actúa en nombre de Jesús.
+
+Las posturas también expresan lo que vivimos: de pie mostramos respeto; sentados escuchamos y reflexionamos; arrodillados adoramos al Señor; al responder nos unimos a la oración del sacerdote.`, remember: 'Los ornamentos y las posturas nos ayudan a rezar con el cuerpo y el corazón.' },
+      { title: 'Objetos litúrgicos', icon: Wine, image: asset('/fotos/cáliz.jpg'), text: `En la Misa se utilizan libros y objetos litúrgicos. Son objetos cuidados porque estarán en contacto con el Cuerpo y la Sangre de Jesús.
+- **Cáliz**: copa para la Sangre de Cristo.
+- **Patena**: platillo para el pan que será consagrado.
+- **Copón**: recipiente para guardar formas consagradas.
+- **Vinajeras**: contienen el agua y el vino.
+- **Corporal**: lienzo que se coloca sobre el altar.`, remember: 'Los objetos litúrgicos se usan con respeto porque sirven para celebrar la Eucaristía.' },
+    ]
+  },
   {
     id: 0,
     title: 'Ritos iniciales',
@@ -918,7 +960,7 @@ const misaData = [
 ];
 
 export default function App() {
-  const [openSection, setOpenSection] = useState(0);
+  const [openSection, setOpenSection] = useState(-1);
   const [prayerModal, setPrayerModal] = useState(null);
   const [showCover, setShowCover] = useState(true);
   const [showPrologue, setShowPrologue] = useState(false);
