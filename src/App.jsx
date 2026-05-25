@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { onAuthStateChanged, signInWithPopup, signOut } from 'firebase/auth';
 import { addDoc, collection, doc, getDoc, getDocs, query, serverTimestamp, setDoc, where } from 'firebase/firestore';
 import {
@@ -235,6 +235,51 @@ function FormattedText({ text }) {
   return <div className="formatted-text">{blocks}</div>;
 }
 
+function FormatToolbar({ textareaRef, value, onChange }) {
+  const applyFormat = (type) => {
+    const textarea = textareaRef.current;
+    if (!textarea) return;
+    const start = textarea.selectionStart;
+    const end = textarea.selectionEnd;
+    const selected = value.slice(start, end);
+    let nextText = selected;
+    let cursorStart = start;
+    let cursorEnd = end;
+
+    if (type === 'bold') {
+      nextText = `**${selected || 'texto'}**`;
+      cursorStart = start + 2;
+      cursorEnd = start + nextText.length - 2;
+    }
+    if (type === 'italic') {
+      nextText = `*${selected || 'texto'}*`;
+      cursorStart = start + 1;
+      cursorEnd = start + nextText.length - 1;
+    }
+    if (type === 'list') {
+      nextText = selected
+        ? selected.split('\n').map((line) => line.trim() ? `- ${line.replace(/^-\s*/, '')}` : line).join('\n')
+        : '- primer punto\n- segundo punto';
+      cursorStart = start;
+      cursorEnd = start + nextText.length;
+    }
+
+    onChange(value.slice(0, start) + nextText + value.slice(end));
+    window.setTimeout(() => {
+      textarea.focus();
+      textarea.setSelectionRange(cursorStart, cursorEnd);
+    }, 0);
+  };
+
+  return (
+    <div className="format-toolbar" aria-label="Formato de texto">
+      <button type="button" onClick={() => applyFormat('bold')}><strong>N</strong></button>
+      <button type="button" onClick={() => applyFormat('italic')}><em>C</em></button>
+      <button type="button" onClick={() => applyFormat('list')}>Lista</button>
+    </div>
+  );
+}
+
 // --- Componentes ---
 
 function PrayerModal({ prayerTitle, prayerLines, onClose }) {
@@ -320,6 +365,9 @@ function TeacherModal({
   const [teacherEmailMessage, setTeacherEmailMessage] = useState('');
   const [actionError, setActionError] = useState('');
   const [isCreatingClass, setIsCreatingClass] = useState(false);
+  const textTextareaRef = useRef(null);
+  const rememberTextareaRef = useRef(null);
+  const introTextareaRef = useRef(null);
   const canManage = firebaseEnabled ? Boolean(teacher && teacherAllowed) : isTeacher;
   const needsClass = firebaseEnabled && !activeClass;
   const classLink = activeClass ? `${window.location.origin}${BASE_URL}?class=${activeClass.id}` : '';
@@ -529,11 +577,12 @@ function TeacherModal({
             {editingCard && (
               <div className="teacher-inline-editor">
                 <h3>{editingCard}</h3>
-                <p className="format-help">Formato: <strong>**negrita**</strong>, <em>*cursiva*</em> y líneas que empiezan por <strong>- </strong> para listas.</p>
                 <label>Texto principal</label>
-                <textarea value={editingText} onChange={(event) => setEditingText(event.target.value)} rows="5" />
+                <FormatToolbar textareaRef={textTextareaRef} value={editingText} onChange={setEditingText} />
+                <textarea ref={textTextareaRef} value={editingText} onChange={(event) => setEditingText(event.target.value)} rows="5" />
                 <label>Recuerda</label>
-                <textarea value={editingRemember} onChange={(event) => setEditingRemember(event.target.value)} rows="3" />
+                <FormatToolbar textareaRef={rememberTextareaRef} value={editingRemember} onChange={setEditingRemember} />
+                <textarea ref={rememberTextareaRef} value={editingRemember} onChange={(event) => setEditingRemember(event.target.value)} rows="3" />
                 <div className="teacher-actions">
                   <button className="primary-button" type="button" onClick={saveEditing} disabled={isSaving}>{isSaving ? 'Guardando...' : 'Guardar texto'}</button>
                   <button className="secondary-button" type="button" onClick={() => setEditingCard(null)}>Cancelar</button>
@@ -543,9 +592,9 @@ function TeacherModal({
             {editingIntro !== null && (
               <div className="teacher-inline-editor">
                 <h3>La celebración de la Eucaristía</h3>
-                <p className="format-help">Formato: <strong>**negrita**</strong>, <em>*cursiva*</em> y líneas que empiezan por <strong>- </strong> para listas.</p>
                 <label>Texto introductorio</label>
-                <textarea value={editingIntro} onChange={(event) => setEditingIntro(event.target.value)} rows="8" />
+                <FormatToolbar textareaRef={introTextareaRef} value={editingIntro} onChange={setEditingIntro} />
+                <textarea ref={introTextareaRef} value={editingIntro} onChange={(event) => setEditingIntro(event.target.value)} rows="8" />
                 <div className="teacher-actions">
                   <button className="primary-button" type="button" onClick={saveIntro} disabled={isSaving}>{isSaving ? 'Guardando...' : 'Guardar texto'}</button>
                   <button className="secondary-button" type="button" onClick={() => setEditingIntro(null)}>Cancelar</button>
