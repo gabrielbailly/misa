@@ -823,13 +823,51 @@ function CardActivities({ card }) {
   );
 }
 
+function AnnotatedImage({ src, alt, labels }) {
+  return (
+    <div className="annotated-image-wrap">
+      <img src={src} alt={alt} className="lesson-image annotated-base" />
+      {labels.map((label) => (
+        <div className="image-label" key={label.text} style={{ left: `${label.x}%`, top: `${label.y}%` }}>
+          <span>{label.text}</span>
+          <i style={{ width: `${label.lineWidth}%`, transform: `rotate(${label.angle}deg)` }} />
+        </div>
+      ))}
+    </div>
+  );
+}
+
+function ObjectGallery({ items }) {
+  const [activeItem, setActiveItem] = useState(0);
+  const item = items[activeItem];
+
+  return (
+    <div className="object-gallery">
+      <div className="object-gallery-title">Objetos litúrgicos</div>
+      <div className="object-gallery-view">
+        <button className="gallery-arrow" type="button" onClick={() => setActiveItem((activeItem - 1 + items.length) % items.length)}><ChevronLeft size={22} /></button>
+        <figure>
+          <img src={item.image} alt={item.name} />
+          <figcaption><strong>{item.name}</strong><span>{item.function}</span></figcaption>
+        </figure>
+        <button className="gallery-arrow" type="button" onClick={() => setActiveItem((activeItem + 1) % items.length)}><ChevronRight size={22} /></button>
+      </div>
+      <div className="viewer-dots object-dots">
+        {items.map((galleryItem, index) => (
+          <button className={index === activeItem ? 'dot active' : 'dot'} key={galleryItem.name} onClick={() => setActiveItem(index)} />
+        ))}
+      </div>
+    </div>
+  );
+}
+
 function LessonCard({ card, current, total, onOpenPrayer }) {
   const Icon = card.icon;
 
   return (
     <article className="lesson-card">
       <div className="card-counter">{current} de {total}</div>
-      {card.image && <img src={card.image} alt={card.title} className="lesson-image" />}
+      {card.image && (card.imageLabels ? <AnnotatedImage src={card.image} alt={card.title} labels={card.imageLabels} /> : <img src={card.image} alt={card.title} className="lesson-image" />)}
       <div className="lesson-copy">
         <div className="lesson-title"><span className="timeline-icon"><Icon size={18} /></span><h3>{card.title}</h3></div>
         <FormattedText text={card.text} />
@@ -844,6 +882,7 @@ function LessonCard({ card, current, total, onOpenPrayer }) {
             <video src={card.video} controls preload="metadata" />
           </div>
         )}
+        {card.objectGallery && <ObjectGallery items={card.objectGallery} />}
         <div className="remember-box">
           <CheckCircle2 size={18} /> <strong>Recuerda:</strong> <FormattedText text={card.remember} />
         </div>
@@ -895,17 +934,41 @@ const misaData = [
     description: 'Conocemos el templo, las posturas, los ornamentos y los objetos litúrgicos.',
     cards: [
       { title: 'Lugar de la celebración', icon: Sparkles, image: asset('/fotos/interior iglesia.jpg'), text: 'La iglesia es un lugar sagrado donde nos reunimos los cristianos para celebrar los sacramentos, especialmente la Eucaristía. Dios está presente en cada iglesia; por eso estamos en silencio, con respeto y veneración. La iglesia es la casa de Dios.', remember: 'La iglesia es la casa de Dios y un lugar sagrado para celebrar la Eucaristía.' },
-      { title: 'Partes de la iglesia', icon: BookOpen, image: asset('/fotos/Igl.Corpus Cristi (interior).jpg'), text: `En la iglesia encontramos varias partes importantes:
+      { title: 'Partes de la iglesia', icon: BookOpen, image: asset('/fotos/iglesia.jpg'), imageLabels: [
+        { text: 'Altar', x: 49, y: 50, lineWidth: 16, angle: 92 },
+        { text: 'Ambón', x: 28, y: 44, lineWidth: 18, angle: 116 },
+        { text: 'Presbiterio', x: 55, y: 63, lineWidth: 14, angle: 22 },
+        { text: 'Nave', x: 45, y: 78, lineWidth: 17, angle: -76 },
+      ], text: `En la iglesia encontramos varias partes importantes:
 - **Altar**: mesa donde se realiza el sacrificio de Jesús.
 - **Ambón**: lugar desde donde se proclama la Palabra de Dios.
 - **Nave**: lugar donde se sitúan los fieles.
 - **Presbiterio**: espacio principal donde están el altar y la sede.`, remember: 'El altar, el ambón, la nave y el presbiterio nos ayudan a vivir mejor la celebración.' },
       { title: 'Ornamentos y posturas', icon: Users, image: asset('/fotos/casullas.jpg'), text: `El sacerdote se reviste con ornamentos litúrgicos para celebrar los sacramentos. Cuando vemos al sacerdote revestido, recordamos que actúa en nombre de Jesús.
 
-Las posturas también expresan lo que vivimos: de pie mostramos respeto; sentados escuchamos y reflexionamos; arrodillados adoramos al Señor; al responder nos unimos a la oración del sacerdote.`, remember: 'Los ornamentos y las posturas nos ayudan a rezar con el cuerpo y el corazón.' },
-      { title: 'Objetos litúrgicos', icon: Wine, image: asset('/fotos/cáliz.jpg'), text: `En la Misa se utilizan libros y objetos litúrgicos. Son objetos cuidados porque estarán en contacto con el Cuerpo y la Sangre de Jesús.
+**Posturas y significado**
+- **De pie**: respeto y veneración.
+- **Sentados**: escucha y reflexión.
+- **Arrodillarse**: adoración al Señor en la Eucaristía.
+- **Beso o dar la mano**: cariño y fraternidad.
+- **Responder a las oraciones**: unión con la oración del sacerdote.
+
+**Colores litúrgicos**
+- **Blanco**: fiesta; se usa en Navidad y Pascua.
+- **Verde**: esperanza; se usa durante el tiempo ordinario.
+- **Rojo**: sangre y fuego; se usa en la Pasión y fiestas de mártires.
+- **Morado**: penitencia; se usa en Adviento, Cuaresma y Misas de difuntos.`, remember: 'Los ornamentos, los colores y las posturas nos ayudan a rezar con el cuerpo y el corazón.' },
+      { title: 'Objetos litúrgicos', icon: Wine, image: asset('/fotos/cáliz.jpg'), objectGallery: [
+        { name: 'Cáliz', image: asset('/fotos/cáliz.jpg'), function: 'Copa para la Sangre de Cristo.' },
+        { name: 'Patena', image: asset('/fotos/patena.jpg'), function: 'Platillo para el pan que será consagrado.' },
+        { name: 'Palia', image: asset('/fotos/Corporal.jpg'), function: 'Pieza rígida que cubre el cáliz.' },
+        { name: 'Corporal', image: asset('/fotos/Corporal.jpg'), function: 'Lienzo que se coloca sobre el altar.' },
+        { name: 'Copón', image: asset('/fotos/copon.jpg'), function: 'Recipiente para guardar formas consagradas.' },
+        { name: 'Vinajeras', image: asset('/fotos/vinajeras.jpg'), function: 'Contienen el agua y el vino.' },
+      ], text: `En la Misa se utilizan libros y objetos litúrgicos. Son objetos cuidados porque estarán en contacto con el Cuerpo y la Sangre de Jesús.
 - **Cáliz**: copa para la Sangre de Cristo.
 - **Patena**: platillo para el pan que será consagrado.
+- **Palia**: pieza rígida que cubre el cáliz.
 - **Copón**: recipiente para guardar formas consagradas.
 - **Vinajeras**: contienen el agua y el vino.
 - **Corporal**: lienzo que se coloca sobre el altar.`, remember: 'Los objetos litúrgicos se usan con respeto porque sirven para celebrar la Eucaristía.' },
