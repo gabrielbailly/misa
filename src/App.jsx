@@ -96,7 +96,7 @@ const cardActivities = {
     { type: 'quiz', prompt: '¿Qué es la iglesia?', options: ['Un lugar sagrado donde nos reunimos los cristianos', 'Una sala cualquiera para reuniones', 'Un lugar solo para mirar imágenes'], answer: 'Un lugar sagrado donde nos reunimos los cristianos' },
     { type: 'match', prompt: 'Relaciona cada idea.', pairs: [['Iglesia', 'Casa de Dios'], ['Silencio', 'Señal de respeto y veneración'], ['Eucaristía', 'Celebración principal de los cristianos']] },
   ],
-  'Partes de la iglesia': [
+  'Elementos de la iglesia': [
     { type: 'quiz', prompt: '¿Dónde se proclama la Palabra de Dios?', options: ['En el ambón', 'En la nave', 'En las vinajeras'], answer: 'En el ambón' },
     { type: 'match', prompt: 'Une cada parte con su significado.', pairs: [['Altar', 'Mesa donde se celebra el sacrificio de Jesús'], ['Ambón', 'Lugar desde donde se proclama la Palabra'], ['Nave', 'Lugar donde se sitúan los fieles'], ['Presbiterio', 'Espacio principal donde está el altar']] },
     { type: 'order', prompt: 'Ordena desde la entrada hacia el lugar principal.', steps: ['Nave', 'Presbiterio', 'Altar'] },
@@ -827,9 +827,17 @@ function AnnotatedImage({ src, alt, labels }) {
   return (
     <div className="annotated-image-wrap">
       <img src={src} alt={alt} className="lesson-image annotated-base" />
+      <svg className="image-callout-lines" viewBox="0 0 100 100" preserveAspectRatio="none" aria-hidden="true">
+        {labels.map((label) => (
+          <g key={`${label.text}-line`}>
+            <line x1={label.x} y1={label.y} x2={label.targetX} y2={label.targetY} />
+            <circle cx={label.targetX} cy={label.targetY} r="1.2" />
+          </g>
+        ))}
+      </svg>
       {labels.map((label) => (
         <div className="image-label" key={label.text} style={{ left: `${label.x}%`, top: `${label.y}%` }}>
-          <span>{label.number}</span>
+          <span>{label.text}</span>
         </div>
       ))}
     </div>
@@ -955,16 +963,16 @@ const misaData = [
     description: 'Conocemos el templo, las posturas, los ornamentos y los objetos litúrgicos.',
     cards: [
       { title: 'Lugar de la celebración', icon: Sparkles, image: asset('/fotos/interior iglesia.jpg'), text: 'La iglesia es un lugar sagrado donde nos reunimos los cristianos para celebrar los sacramentos, especialmente la Eucaristía. Dios está presente en cada iglesia; por eso estamos en silencio, con respeto y veneración. La iglesia es la casa de Dios.', remember: 'La iglesia es la casa de Dios y un lugar sagrado para celebrar la Eucaristía.' },
-      { title: 'Partes de la iglesia', icon: BookOpen, image: asset('/fotos/iglesia.jpg'), imageLabels: [
-        { number: 1, text: 'Altar', x: 50, y: 55 },
-        { number: 2, text: 'Ambón', x: 31, y: 49 },
-        { number: 3, text: 'Presbiterio', x: 58, y: 68 },
-        { number: 4, text: 'Nave', x: 45, y: 82 },
-      ], text: `En la iglesia encontramos varias partes importantes:
-- **1. Altar**: mesa donde se realiza el sacrificio de Jesús.
-- **2. Ambón**: lugar desde donde se proclama la Palabra de Dios.
-- **3. Presbiterio**: espacio principal donde están el altar y la sede.
-- **4. Nave**: lugar donde se sitúan los fieles.`, remember: 'El altar, el ambón, la nave y el presbiterio nos ayudan a vivir mejor la celebración.' },
+      { title: 'Elementos de la iglesia', icon: BookOpen, image: asset('/fotos/iglesia.jpg'), imageLabels: [
+        { text: 'Ambón', x: 18, y: 42, targetX: 31, targetY: 56 },
+        { text: 'Altar', x: 58, y: 43, targetX: 50, targetY: 55 },
+        { text: 'Presbiterio', x: 69, y: 66, targetX: 58, targetY: 68 },
+        { text: 'Nave', x: 34, y: 83, targetX: 45, targetY: 78 },
+      ], text: `En la iglesia encontramos varios elementos importantes:
+- **Altar**: mesa donde se realiza el sacrificio de Jesús.
+- **Ambón**: lugar desde donde se proclama la Palabra de Dios.
+- **Presbiterio**: espacio principal donde están el altar y la sede.
+- **Nave**: lugar donde se sitúan los fieles.`, remember: 'El altar, el ambón, la nave y el presbiterio nos ayudan a vivir mejor la celebración.' },
       { title: 'Ornamentos y posturas', icon: Users, image: asset('/fotos/casullas.jpg'), text: 'El sacerdote se reviste con ornamentos litúrgicos para celebrar los sacramentos. Cuando vemos al sacerdote revestido, recordamos que actúa en nombre de Jesús.', infoBubbles: [
         { title: 'Ornamentos', text: `**Colores litúrgicos**
 - **Blanco**: fiesta; se usa en Navidad y Pascua.
