@@ -964,10 +964,10 @@ const misaData = [
     cards: [
       { title: 'Lugar de la celebración', icon: Sparkles, image: asset('/fotos/interior iglesia.jpg'), text: 'La iglesia es un lugar sagrado donde nos reunimos los cristianos para celebrar los sacramentos, especialmente la Eucaristía. Dios está presente en cada iglesia; por eso estamos en silencio, con respeto y veneración. La iglesia es la casa de Dios.', remember: 'La iglesia es la casa de Dios y un lugar sagrado para celebrar la Eucaristía.' },
       { title: 'Elementos de la iglesia', icon: BookOpen, image: asset('/fotos/iglesia.jpg'), imageLabels: [
-        { text: 'Ambón', x: 18, y: 42, targetX: 31, targetY: 56 },
-        { text: 'Altar', x: 58, y: 43, targetX: 50, targetY: 55 },
-        { text: 'Presbiterio', x: 69, y: 66, targetX: 58, targetY: 68 },
-        { text: 'Nave', x: 34, y: 83, targetX: 45, targetY: 78 },
+        { text: 'Ambón', x: 17, y: 34, targetX: 28, targetY: 52 },
+        { text: 'Altar', x: 45, y: 39, targetX: 50, targetY: 52 },
+        { text: 'Presbiterio', x: 65, y: 58, targetX: 50, targetY: 58 },
+        { text: 'Nave', x: 35, y: 76, targetX: 47, targetY: 68 },
       ], text: `En la iglesia encontramos varios elementos importantes:
 - **Altar**: mesa donde se realiza el sacrificio de Jesús.
 - **Ambón**: lugar desde donde se proclama la Palabra de Dios.
