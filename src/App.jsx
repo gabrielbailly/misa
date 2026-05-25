@@ -277,7 +277,7 @@ function TeacherModal({
   const [editingRemember, setEditingRemember] = useState('');
   const [editingIntro, setEditingIntro] = useState(null);
   const [editingActivitiesCard, setEditingActivitiesCard] = useState(null);
-  const [editingActivities, setEditingActivities] = useState('');
+  const [editingActivities, setEditingActivities] = useState([]);
   const [newTeacherEmail, setNewTeacherEmail] = useState('');
   const [teacherEmailMessage, setTeacherEmailMessage] = useState('');
   const [actionError, setActionError] = useState('');
@@ -334,20 +334,42 @@ function TeacherModal({
 
   const startEditingActivities = (card) => {
     setEditingActivitiesCard(card.title);
-    setEditingActivities(JSON.stringify(card.activities || [], null, 2));
+    setEditingActivities((card.activities || []).map((activity) => ({ ...activity })));
   };
 
   const saveActivities = async () => {
     setActionError('');
     try {
-      const parsedActivities = JSON.parse(editingActivities);
-      if (!Array.isArray(parsedActivities)) throw new Error('Las actividades deben ser una lista.');
-      await onSaveActivities(editingActivitiesCard, parsedActivities);
+      await onSaveActivities(editingActivitiesCard, editingActivities);
       setEditingActivitiesCard(null);
     } catch (error) {
       setActionError(error.message || 'No se han podido guardar las actividades.');
     }
   };
+
+  const createActivity = (type) => {
+    if (type === 'match') return { type: 'match', prompt: 'Relaciona.', pairs: [['', '']] };
+    if (type === 'order') return { type: 'order', prompt: 'Ordena.', steps: [''] };
+    return { type: 'quiz', prompt: 'Pregunta.', options: ['', '', ''], answer: '' };
+  };
+
+  const updateActivity = (activityIndex, nextActivity) => {
+    setEditingActivities(editingActivities.map((activity, index) => index === activityIndex ? nextActivity : activity));
+  };
+
+  const removeActivity = (activityIndex) => {
+    setEditingActivities(editingActivities.filter((_, index) => index !== activityIndex));
+  };
+
+  const updateActivityType = (activityIndex, type) => {
+    updateActivity(activityIndex, createActivity(type));
+  };
+
+  const updateArrayItem = (items, itemIndex, value) => items.map((item, index) => index === itemIndex ? value : item);
+
+  const updatePair = (pairs, pairIndex, sideIndex, value) => pairs.map((pair, index) => (
+    index === pairIndex ? pair.map((side, sidePosition) => sidePosition === sideIndex ? value : side) : pair
+  ));
 
   const addTeacherEmail = async (event) => {
     event.preventDefault();
@@ -493,9 +515,68 @@ function TeacherModal({
             {editingActivitiesCard && (
               <div className="teacher-inline-editor">
                 <h3>Actividades: {editingActivitiesCard}</h3>
-                <label>Edita la lista de actividades</label>
-                <textarea value={editingActivities} onChange={(event) => setEditingActivities(event.target.value)} rows="14" />
-                <p>Tipos disponibles: quiz, match y order. Conserva las comillas, corchetes y comas.</p>
+                <p>Edita las actividades con campos. Puedes añadir, eliminar o cambiar el tipo.</p>
+                <div className="activity-editor-list">
+                  {editingActivities.map((activity, activityIndex) => (
+                    <div className="activity-editor-card" key={activityIndex}>
+                      <div className="activity-editor-top">
+                        <strong>Actividad {activityIndex + 1}</strong>
+                        <select value={activity.type} onChange={(event) => updateActivityType(activityIndex, event.target.value)}>
+                          <option value="quiz">Elige</option>
+                          <option value="match">Relaciona</option>
+                          <option value="order">Ordena</option>
+                        </select>
+                        <button className="secondary-button" type="button" onClick={() => removeActivity(activityIndex)}>Eliminar</button>
+                      </div>
+                      <label>Enunciado</label>
+                      <input value={activity.prompt || ''} onChange={(event) => updateActivity(activityIndex, { ...activity, prompt: event.target.value })} />
+                      {activity.type === 'quiz' && (
+                        <div className="activity-editor-group">
+                          <label>Opciones</label>
+                          {(activity.options || []).map((option, optionIndex) => (
+                            <div className="activity-editor-row" key={optionIndex}>
+                              <input value={option} onChange={(event) => updateActivity(activityIndex, { ...activity, options: updateArrayItem(activity.options || [], optionIndex, event.target.value) })} />
+                              <button className="secondary-button" type="button" onClick={() => updateActivity(activityIndex, { ...activity, options: (activity.options || []).filter((_, index) => index !== optionIndex) })}>Quitar</button>
+                            </div>
+                          ))}
+                          <button className="secondary-button" type="button" onClick={() => updateActivity(activityIndex, { ...activity, options: [...(activity.options || []), ''] })}>Añadir opción</button>
+                          <label>Respuesta correcta</label>
+                          <input value={activity.answer || ''} onChange={(event) => updateActivity(activityIndex, { ...activity, answer: event.target.value })} />
+                        </div>
+                      )}
+                      {activity.type === 'match' && (
+                        <div className="activity-editor-group">
+                          <label>Parejas</label>
+                          {(activity.pairs || []).map((pair, pairIndex) => (
+                            <div className="activity-editor-row pair" key={pairIndex}>
+                              <input placeholder="Concepto" value={pair[0] || ''} onChange={(event) => updateActivity(activityIndex, { ...activity, pairs: updatePair(activity.pairs || [], pairIndex, 0, event.target.value) })} />
+                              <input placeholder="Respuesta" value={pair[1] || ''} onChange={(event) => updateActivity(activityIndex, { ...activity, pairs: updatePair(activity.pairs || [], pairIndex, 1, event.target.value) })} />
+                              <button className="secondary-button" type="button" onClick={() => updateActivity(activityIndex, { ...activity, pairs: (activity.pairs || []).filter((_, index) => index !== pairIndex) })}>Quitar</button>
+                            </div>
+                          ))}
+                          <button className="secondary-button" type="button" onClick={() => updateActivity(activityIndex, { ...activity, pairs: [...(activity.pairs || []), ['', '']] })}>Añadir pareja</button>
+                        </div>
+                      )}
+                      {activity.type === 'order' && (
+                        <div className="activity-editor-group">
+                          <label>Pasos en orden correcto</label>
+                          {(activity.steps || []).map((step, stepIndex) => (
+                            <div className="activity-editor-row" key={stepIndex}>
+                              <input value={step} onChange={(event) => updateActivity(activityIndex, { ...activity, steps: updateArrayItem(activity.steps || [], stepIndex, event.target.value) })} />
+                              <button className="secondary-button" type="button" onClick={() => updateActivity(activityIndex, { ...activity, steps: (activity.steps || []).filter((_, index) => index !== stepIndex) })}>Quitar</button>
+                            </div>
+                          ))}
+                          <button className="secondary-button" type="button" onClick={() => updateActivity(activityIndex, { ...activity, steps: [...(activity.steps || []), ''] })}>Añadir paso</button>
+                        </div>
+                      )}
+                    </div>
+                  ))}
+                </div>
+                <div className="teacher-actions compact-actions">
+                  <button className="secondary-button" type="button" onClick={() => setEditingActivities([...editingActivities, createActivity('quiz')])}>Añadir elige</button>
+                  <button className="secondary-button" type="button" onClick={() => setEditingActivities([...editingActivities, createActivity('match')])}>Añadir relaciona</button>
+                  <button className="secondary-button" type="button" onClick={() => setEditingActivities([...editingActivities, createActivity('order')])}>Añadir ordena</button>
+                </div>
                 <div className="teacher-actions">
                   <button className="primary-button" type="button" onClick={saveActivities} disabled={isSaving}>{isSaving ? 'Guardando...' : 'Guardar actividades'}</button>
                   <button className="secondary-button" type="button" onClick={() => setEditingActivitiesCard(null)}>Cancelar</button>
