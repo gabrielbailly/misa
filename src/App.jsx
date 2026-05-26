@@ -765,13 +765,14 @@ function CardActivities({ card }) {
           return (
             <div className="mini-activity" key={`${card.title}-${index}`}>
               <div className="mini-heading"><CheckCircle2 size={20} /> <strong>Actividad {index + 1}: relaciona</strong></div>
-              <p>{activity.prompt} Arrastra cada respuesta a su lugar.</p>
+              <p>{activity.prompt} Arrastra cada respuesta a su lugar o toca una respuesta y luego su hueco.</p>
               <div className="drag-options">
                 {meanings.map((option) => (
                   <button
-                    className="answer draggable-answer"
+                    className={'answer draggable-answer ' + (draggedMeaning === option ? 'selected' : '')}
                     draggable
                     key={option}
+                    onClick={() => setDraggedMeaning(option)}
                     onDragStart={() => setDraggedMeaning(option)}
                     type="button"
                   >
@@ -789,6 +790,14 @@ function CardActivities({ card }) {
                       className={'drop-zone ' + (selected && selected === meaning ? 'correct' : selected ? 'wrong' : '')}
                       onDragOver={(event) => event.preventDefault()}
                       onDrop={() => setAnswers({ ...answers, [`match-${index}-${pairIndex}`]: draggedMeaning })}
+                      onClick={() => draggedMeaning && setAnswers({ ...answers, [`match-${index}-${pairIndex}`]: draggedMeaning })}
+                      role="button"
+                      tabIndex={0}
+                      onKeyDown={(event) => {
+                        if ((event.key === 'Enter' || event.key === ' ') && draggedMeaning) {
+                          setAnswers({ ...answers, [`match-${index}-${pairIndex}`]: draggedMeaning });
+                        }
+                      }}
                     >
                       {selected || 'Suelta aquí la respuesta'}
                     </div>
