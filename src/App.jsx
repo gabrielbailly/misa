@@ -856,8 +856,8 @@ function InfoBubbles({ items }) {
           </button>
         ))}
       </div>
-      {items.map((item) => activeBubble === item.title && (
-        <div className="bubble-content" key={`${item.title}-content`}>
+      {items.map((item, index) => activeBubble === item.title && (
+        <div className="bubble-content" key={`${item.title}-content`} style={{ '--bubble-arrow-left': index === 0 ? '2rem' : '9.5rem' }}>
           <FormattedText text={item.text} />
         </div>
       ))}
@@ -986,7 +986,7 @@ const misaData = [
 - **Beso o dar la mano**: cariño y fraternidad.
 - **Responder a las oraciones**: unión con la oración del sacerdote.` },
       ], remember: 'Los ornamentos, los colores y las posturas nos ayudan a rezar con el cuerpo y el corazón.' },
-      { title: 'Objetos litúrgicos', icon: Wine, image: asset('/fotos/cáliz.jpg'), objectGallery: [
+      { title: 'Objetos litúrgicos', icon: Wine, image: asset('/fotos/elementos.jpg'), objectGallery: [
         { name: 'Cáliz', image: asset('/fotos/cáliz.jpg'), function: 'Copa para la Sangre de Cristo.' },
         { name: 'Patena', image: asset('/fotos/patena.jpg'), function: 'Platillo para el pan que será consagrado.' },
         { name: 'Palia', image: asset('/fotos/Corporal.jpg'), function: 'Pieza rígida que cubre el cáliz.' },
