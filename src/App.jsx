@@ -29,6 +29,9 @@ import { auth, db, googleProvider, isFirebaseConfigured } from './firebase';
 // Ajuste para GitHub Pages
 const BASE_URL = import.meta.env.BASE_URL || '/';
 const asset = (path) => encodeURI(BASE_URL + path.replace(/^\//, '').normalize('NFC'));
+const getAppPath = (path) => new URL(path, window.location.origin).pathname.replace(/\/$/, '') || '/';
+const getTeacherPath = () => `${getAppPath(BASE_URL) === '/' ? '' : getAppPath(BASE_URL)}/profesor`;
+const isTeacherRoute = () => getAppPath(window.location.pathname) === getTeacherPath();
 const TEACHER_PASSWORD = 'misa2026';
 const LOCKED_SECTIONS_KEY = 'misa-locked-sections';
 const ACTIVE_CLASS_KEY = 'misa-active-class';
@@ -427,7 +430,59 @@ function AppInfoModal({ onClose }) {
   );
 }
 
-function TeacherModal({
+function TeacherLoginModal({ firebaseEnabled, onClose, onGoogleLogin, onLocalLogin, onLogout, teacher, teacherAccessChecked, teacherAllowed }) {
+  const [password, setPassword] = useState('');
+  const [error, setError] = useState('');
+
+  const handleLogin = (event) => {
+    event.preventDefault();
+    if (password === TEACHER_PASSWORD) {
+      setError('');
+      onLocalLogin();
+      return;
+    }
+    setError('Contraseña incorrecta.');
+  };
+
+  return (
+    <div className="modal-overlay" onClick={onClose}>
+      <div className="modal-content teacher-modal" onClick={e => e.stopPropagation()}>
+        <button className="modal-close" onClick={onClose}><X /></button>
+        <p className="eyebrow">Modo profesor</p>
+        <h2 className="modal-title">Acceso profesor</h2>
+        {firebaseEnabled && !teacher && (
+          <div className="teacher-login">
+            <p>Entra con tu cuenta de Google para guardar tus clases y usarlas desde otros ordenadores.</p>
+            <button className="primary-button" type="button" onClick={onGoogleLogin}>Entrar con Google</button>
+          </div>
+        )}
+        {firebaseEnabled && teacher && !teacherAccessChecked && (
+          <div className="teacher-login">
+            <p>Comprobando permisos de profesor...</p>
+          </div>
+        )}
+        {firebaseEnabled && teacher && teacherAccessChecked && !teacherAllowed && (
+          <div className="teacher-login">
+            <p className="teacher-error">Esta cuenta no tiene permiso de profesor.</p>
+            <p>Has entrado como {teacher.email}. Pide al administrador que añada este correo a la lista de profesores autorizados.</p>
+            <button className="secondary-button" type="button" onClick={onLogout}>Salir</button>
+          </div>
+        )}
+        {!firebaseEnabled && (
+          <form className="teacher-login" onSubmit={handleLogin}>
+            <p>Firebase todavía no está configurado. Mientras tanto, este modo guarda los cambios solo en este navegador.</p>
+            <label htmlFor="teacher-password">Contraseña</label>
+            <input id="teacher-password" type="password" value={password} onChange={(event) => setPassword(event.target.value)} autoFocus />
+            {error && <p className="teacher-error">{error}</p>}
+            <button className="primary-button" type="submit">Entrar</button>
+          </form>
+        )}
+      </div>
+    </div>
+  );
+}
+
+function TeacherPage({
   activeClass,
   classes,
   editableSections,
@@ -438,7 +493,6 @@ function TeacherModal({
   onClose,
   onCreateClass,
   onLockAll,
-  onLogin,
   onLogout,
   onAddTeacherEmail,
   onSaveActivities,
@@ -450,9 +504,6 @@ function TeacherModal({
   teacher,
   teacherAllowed,
 }) {
-  const [password, setPassword] = useState('');
-  const [isTeacher, setIsTeacher] = useState(false);
-  const [error, setError] = useState('');
   const [className, setClassName] = useState('');
   const [editingCard, setEditingCard] = useState(null);
   const [editingText, setEditingText] = useState('');
@@ -469,19 +520,8 @@ function TeacherModal({
   const introTextareaRef = useRef(null);
   const textEditorRef = useRef(null);
   const introEditorRef = useRef(null);
-  const canManage = firebaseEnabled ? Boolean(teacher && teacherAllowed) : isTeacher;
   const needsClass = firebaseEnabled && !activeClass;
   const classLink = activeClass ? `${window.location.origin}${BASE_URL}?class=${activeClass.id}` : '';
-
-  const handleLogin = (event) => {
-    event.preventDefault();
-    if (password === TEACHER_PASSWORD) {
-      setIsTeacher(true);
-      setError('');
-      return;
-    }
-    setError('Contraseña incorrecta.');
-  };
 
   const handleCreateClass = async (event) => {
     event.preventDefault();
@@ -592,10 +632,15 @@ function TeacherModal({
   }, [editingIntro]);
 
   return (
-    <div className="modal-overlay" onClick={onClose}>
-      <div className="modal-content teacher-modal" onClick={e => e.stopPropagation()}>
-        <button className="modal-close" onClick={onClose}><X /></button>
-        <h2 className="modal-title">Acceso profesor</h2>
+    <main className="teacher-page">
+      <div className="teacher-page-shell">
+        <div className="teacher-page-header">
+          <div>
+            <p className="eyebrow">Modo profesor</p>
+            <h2>Acceso profesor</h2>
+          </div>
+          <button className="secondary-button" type="button" onClick={onClose}>Volver</button>
+        </div>
         <details className="teacher-guide">
           <summary>
             <span><BookOpen size={18} /> Guía para el profesor</span>
@@ -615,49 +660,27 @@ function TeacherModal({
             ))}
           </div>
         </details>
-        {firebaseEnabled && !teacher && (
-          <div className="teacher-login">
-            <p>Entra con tu cuenta de Google para guardar tus clases y usarlas desde otros ordenadores.</p>
-            <button className="primary-button" type="button" onClick={onLogin}>Entrar con Google</button>
-          </div>
-        )}
-        {firebaseEnabled && teacher && !teacherAllowed && (
-          <div className="teacher-login">
-            <p className="teacher-error">Esta cuenta no tiene permiso de profesor.</p>
-            <p>Has entrado como {teacher.email}. Pide al administrador que añada este correo a la lista de profesores autorizados.</p>
-            <button className="secondary-button" type="button" onClick={onLogout}>Salir</button>
-          </div>
-        )}
-        {!firebaseEnabled && !isTeacher ? (
-          <form className="teacher-login" onSubmit={handleLogin}>
-            <p>Firebase todavía no está configurado. Mientras tanto, este modo guarda los cambios solo en este navegador.</p>
-            <label htmlFor="teacher-password">Contraseña</label>
-            <input id="teacher-password" type="password" value={password} onChange={(event) => setPassword(event.target.value)} autoFocus />
-            {error && <p className="teacher-error">{error}</p>}
-            <button className="primary-button" type="submit">Entrar</button>
-          </form>
-        ) : canManage && (
-          <div className="teacher-panel">
-            {teacher && (
-              <div className="teacher-user-row">
-                <span>{teacher.displayName || teacher.email}</span>
-                <button className="secondary-button" type="button" onClick={onLogout}>Salir</button>
-              </div>
-            )}
-            {firebaseEnabled && (
-              <>
-                <form className="teacher-class-form" onSubmit={addTeacherEmail}>
-                  <input value={newTeacherEmail} onChange={(event) => setNewTeacherEmail(event.target.value)} placeholder="Correo de otro profesor" type="email" />
-                  <button className="primary-button" type="submit">Añadir profesor</button>
-                </form>
-                {teacherEmailMessage && <p className="teacher-success">{teacherEmailMessage}</p>}
-                <form className="teacher-class-form" onSubmit={handleCreateClass}>
-                  <input value={className} onChange={(event) => setClassName(event.target.value)} placeholder="Nueva clase, por ejemplo 4ºA" />
-                  <button className="primary-button" type="submit" disabled={isCreatingClass}>{isCreatingClass ? 'Creando...' : 'Crear clase'}</button>
-                </form>
-                {actionError && <p className="teacher-error">{actionError}</p>}
-                <div className="teacher-class-list">
-                  {classes.map((classItem) => (
+        <div className="teacher-panel">
+          {teacher && (
+            <div className="teacher-user-row">
+              <span>{teacher.displayName || teacher.email}</span>
+              <button className="secondary-button" type="button" onClick={onLogout}>Salir</button>
+            </div>
+          )}
+          {firebaseEnabled && (
+            <>
+              <form className="teacher-class-form" onSubmit={addTeacherEmail}>
+                <input value={newTeacherEmail} onChange={(event) => setNewTeacherEmail(event.target.value)} placeholder="Correo de otro profesor" type="email" />
+                <button className="primary-button" type="submit">Añadir profesor</button>
+              </form>
+              {teacherEmailMessage && <p className="teacher-success">{teacherEmailMessage}</p>}
+              <form className="teacher-class-form" onSubmit={handleCreateClass}>
+                <input value={className} onChange={(event) => setClassName(event.target.value)} placeholder="Nueva clase, por ejemplo 4ºA" />
+                <button className="primary-button" type="submit" disabled={isCreatingClass}>{isCreatingClass ? 'Creando...' : 'Crear clase'}</button>
+              </form>
+              {actionError && <p className="teacher-error">{actionError}</p>}
+              <div className="teacher-class-list">
+                {classes.map((classItem) => (
                     <button className={activeClass?.id === classItem.id ? 'teacher-class active' : 'teacher-class'} key={classItem.id} type="button" onClick={() => onSelectClass(classItem.id)}>
                       {classItem.name}
                     </button>
@@ -813,9 +836,8 @@ function TeacherModal({
               </div>
             )}
           </div>
-        )}
       </div>
-    </div>
+    </main>
   );
 }
 
@@ -1158,9 +1180,13 @@ export default function App() {
   const [showCover, setShowCover] = useState(true);
   const [showPrologue, setShowPrologue] = useState(false);
   const [showAppInfo, setShowAppInfo] = useState(false);
-  const [showTeacherModal, setShowTeacherModal] = useState(false);
+  const [showTeacherPage, setShowTeacherPage] = useState(() => isTeacherRoute());
+  const [showTeacherLogin, setShowTeacherLogin] = useState(false);
+  const [isLocalTeacher, setIsLocalTeacher] = useState(false);
+  const [pendingTeacherNavigation, setPendingTeacherNavigation] = useState(false);
   const [teacher, setTeacher] = useState(null);
   const [teacherAllowed, setTeacherAllowed] = useState(false);
+  const [teacherAccessChecked, setTeacherAccessChecked] = useState(false);
   const [classes, setClasses] = useState([]);
   const [activeClass, setActiveClass] = useState(null);
   const [isSaving, setIsSaving] = useState(false);
@@ -1194,6 +1220,58 @@ export default function App() {
   });
   const editableSections = applyActivityOverrides(applyTextOverrides(cloneMisaData(), textOverrides), activityOverrides);
   const introText = getIntroText(introOverrides);
+  const canOpenTeacherPage = isFirebaseConfigured ? Boolean(teacher && teacherAllowed) : isLocalTeacher;
+
+  const goToTeacherPage = () => {
+    window.history.pushState(null, '', getTeacherPath());
+    setShowTeacherPage(true);
+    setShowTeacherLogin(false);
+  };
+
+  useEffect(() => {
+    const syncTeacherRoute = () => setShowTeacherPage(isTeacherRoute());
+    window.addEventListener('popstate', syncTeacherRoute);
+    return () => window.removeEventListener('popstate', syncTeacherRoute);
+  }, []);
+
+  const openTeacherAccess = () => {
+    if (canOpenTeacherPage) {
+      goToTeacherPage();
+      return;
+    }
+    setShowTeacherLogin(true);
+  };
+
+  const closeTeacherPage = () => {
+    window.history.pushState(null, '', BASE_URL);
+    setShowTeacherPage(false);
+  };
+
+  const closeTeacherLogin = () => {
+    setShowTeacherLogin(false);
+    setPendingTeacherNavigation(false);
+    if (isTeacherRoute() && !canOpenTeacherPage) closeTeacherPage();
+  };
+
+  const loginLocalTeacher = () => {
+    setIsLocalTeacher(true);
+    goToTeacherPage();
+  };
+
+  useEffect(() => {
+    if (showTeacherPage && !canOpenTeacherPage) setShowTeacherLogin(true);
+  }, [showTeacherPage, canOpenTeacherPage]);
+
+  useEffect(() => {
+    if (showTeacherLogin && canOpenTeacherPage) goToTeacherPage();
+  }, [showTeacherLogin, canOpenTeacherPage]);
+
+  useEffect(() => {
+    if (!pendingTeacherNavigation || !canOpenTeacherPage) return;
+    setPendingTeacherNavigation(false);
+    goToTeacherPage();
+  }, [pendingTeacherNavigation, canOpenTeacherPage]);
+
   useEffect(() => {
     if (!isFirebaseConfigured || !auth) return undefined;
     return onAuthStateChanged(auth, (currentUser) => {
@@ -1202,6 +1280,7 @@ export default function App() {
         setClasses([]);
         setActiveClass(null);
         setTeacherAllowed(false);
+        setTeacherAccessChecked(false);
       }
     });
   }, []);
@@ -1210,17 +1289,21 @@ export default function App() {
     if (!isFirebaseConfigured || !db || !teacher) return;
 
     const checkTeacherAccess = async () => {
+      setTeacherAccessChecked(false);
       if (isBootstrapTeacher(teacher)) {
         setTeacherAllowed(true);
+        setTeacherAccessChecked(true);
         return;
       }
       const email = normalizeEmail(teacher.email || '');
       if (!email) {
         setTeacherAllowed(false);
+        setTeacherAccessChecked(true);
         return;
       }
       const teacherDoc = await getDoc(doc(db, 'teachers', email));
       setTeacherAllowed(teacherDoc.exists());
+      setTeacherAccessChecked(true);
     };
 
     checkTeacherAccess();
@@ -1265,6 +1348,7 @@ export default function App() {
   const loginTeacher = async () => {
     if (!auth || !googleProvider) return;
     await signInWithPopup(auth, googleProvider);
+    setPendingTeacherNavigation(true);
   };
 
   const logoutTeacher = async () => {
@@ -1377,8 +1461,20 @@ export default function App() {
       )}
       {showPrologue && <PrologueModal onClose={() => setShowPrologue(false)} />}
       {showAppInfo && <AppInfoModal onClose={() => setShowAppInfo(false)} />}
-      {showTeacherModal && (
-        <TeacherModal
+      {showTeacherLogin && (
+        <TeacherLoginModal
+          firebaseEnabled={isFirebaseConfigured}
+          onClose={closeTeacherLogin}
+          onGoogleLogin={loginTeacher}
+          onLocalLogin={loginLocalTeacher}
+          onLogout={logoutTeacher}
+          teacher={teacher}
+          teacherAccessChecked={teacherAccessChecked}
+          teacherAllowed={teacherAllowed}
+        />
+      )}
+      {showTeacherPage && canOpenTeacherPage ? (
+        <TeacherPage
           activeClass={activeClass}
           classes={classes}
           editableSections={editableSections}
@@ -1386,10 +1482,9 @@ export default function App() {
           introText={introText}
           isSaving={isSaving}
           lockedSections={lockedSections}
-          onClose={() => setShowTeacherModal(false)}
+          onClose={closeTeacherPage}
           onCreateClass={createClass}
           onLockAll={() => saveLockedSections(misaData.map((section) => section.id))}
-          onLogin={loginTeacher}
           onLogout={logoutTeacher}
           onAddTeacherEmail={addTeacherEmail}
           onSaveActivities={saveActivities}
@@ -1401,8 +1496,7 @@ export default function App() {
           teacher={teacher}
           teacherAllowed={teacherAllowed}
         />
-      )}
-      {showCover ? (
+      ) : showCover ? (
         <header className="hero cover-hero">
           <nav className="cover-topbar">
             <img src={asset('/logo colegio.png')} alt="Logo" className="school-logo cover-logo" />
@@ -1424,7 +1518,7 @@ export default function App() {
         <section className="content-section" id="partes">
           <div className="content-actions">
             <button className="back-home-button primary-button" type="button" onClick={() => setShowCover(true)}>Volver al inicio</button>
-            <button className="teacher-access-button primary-button" type="button" onClick={() => setShowTeacherModal(true)}>Profesor</button>
+            <button className="teacher-access-button primary-button" type="button" onClick={openTeacherAccess}>Profesor</button>
           </div>
           <h2 className="eucaristia-heading">La celebración de la Eucaristía</h2>
           <div className="celebration-intro">
