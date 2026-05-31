@@ -7,6 +7,7 @@ const mediaDirs = ['fotos', 'fotogramas', 'videos'];
 const mimeTypes = {
   '.jpg': 'image/jpeg',
   '.jpeg': 'image/jpeg',
+  '.md': 'text/markdown; charset=utf-8',
   '.png': 'image/png',
   '.mp4': 'video/mp4',
 };
@@ -21,6 +22,13 @@ function localMediaPlugin() {
           const logoPath = path.join(process.cwd(), 'logo colegio.png');
           res.setHeader('Content-Type', 'image/png');
           fs.createReadStream(logoPath).pipe(res);
+          return;
+        }
+
+        if (pathname === '/README.md' || pathname === '/misa/README.md') {
+          const readmePath = path.join(process.cwd(), 'README.md');
+          res.setHeader('Content-Type', mimeTypes['.md']);
+          fs.createReadStream(readmePath).pipe(res);
           return;
         }
 
@@ -56,6 +64,12 @@ function localMediaPlugin() {
       const logoTarget = path.join(distDir, 'logo colegio.png');
       if (fs.existsSync(logoSource)) {
         fs.copyFileSync(logoSource, logoTarget);
+      }
+
+      const readmeSource = path.join(process.cwd(), 'README.md');
+      const readmeTarget = path.join(distDir, 'README.md');
+      if (fs.existsSync(readmeSource)) {
+        fs.copyFileSync(readmeSource, readmeTarget);
       }
     },
   };
