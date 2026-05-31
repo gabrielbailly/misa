@@ -91,6 +91,86 @@ const appInfo = [
   'Mayo 2026',
 ];
 
+const teacherGuide = [
+  {
+    title: 'Presentación',
+    paragraphs: [
+      'Tanto amó Dios al mundo es una web interactiva para ayudar a los alumnos a comprender la celebración de la Santa Misa.',
+      'El recurso presenta las partes principales de la Eucaristía con explicaciones breves, imágenes, vídeos, oraciones y actividades. Está pensado para utilizarse en clase, guiado por el profesor, o como material de repaso para los alumnos.',
+      'El objetivo principal no es solo que los alumnos memoricen el orden de la Misa, sino que comprendan qué ocurre en cada momento y qué sentido tiene para la vida cristiana.',
+    ],
+  },
+  {
+    title: 'Organización del contenido',
+    paragraphs: [
+      'La aplicación se abre con una portada titulada Tanto amó Dios al mundo. Desde ella se puede acceder al prólogo, a la información de la aplicación y al recorrido principal.',
+      'Al pulsar Empezar, se entra en el apartado La celebración de la Eucaristía.',
+    ],
+    items: [
+      'Lugar de la celebración y ornamentos',
+      'Ritos iniciales',
+      'Liturgia de la Palabra',
+      'Liturgia Eucarística',
+      'Rito de despedida',
+    ],
+  },
+  {
+    title: 'Qué encuentra el alumno',
+    paragraphs: ['En cada apartado, el alumno puede trabajar con:'],
+    items: [
+      'Una explicación breve y adaptada del momento de la Misa.',
+      'Una imagen o vídeo relacionado.',
+      'Un recuadro Recuerda con la idea principal.',
+      'Oraciones litúrgicas cuando corresponde.',
+      'Actividades sencillas de comprensión.',
+    ],
+  },
+  {
+    title: 'Propuesta de uso en clase',
+    paragraphs: ['La aplicación puede utilizarse como apoyo visual, recorrido por sesiones, actividad individual o por parejas, repaso y material complementario en Religión, catequesis o preparación sacramental.'],
+    items: [
+      'Presentar el bloque que se va a estudiar.',
+      'Leer con los alumnos las tarjetas principales.',
+      'Ver las imágenes o vídeos correspondientes.',
+      'Comentar el recuadro Recuerda.',
+      'Realizar las actividades de comprensión.',
+      'Cerrar la sesión con una breve puesta en común.',
+    ],
+  },
+  {
+    title: 'Modo profesor',
+    paragraphs: [
+      'El modo profesor permite preparar la experiencia de los alumnos: crear clases, generar enlaces específicos, bloquear o desbloquear bloques, editar textos y actividades, y añadir otros profesores autorizados si Firebase está configurado.',
+      'Cuando Firebase está configurado, el profesor accede con Google y los cambios se guardan para la clase seleccionada. Si Firebase no está configurado, los cambios se guardan solo en este navegador.',
+    ],
+  },
+  {
+    title: 'Clases y enlaces para alumnos',
+    paragraphs: [
+      'En el modo profesor se puede crear una clase, por ejemplo 4A, 5 Primaria o 1 ESO B. Al seleccionar una clase, la aplicación muestra un enlace para alumnos que carga automáticamente la configuración preparada por el profesor.',
+      'Los alumnos no necesitan cuenta de profesor. Solo tienen que abrir el enlace de su clase y accederán al contenido que el profesor haya dejado disponible.',
+    ],
+  },
+  {
+    title: 'Bloqueo, textos y actividades',
+    paragraphs: [
+      'El profesor puede bloquear bloques completos para mostrar solo lo necesario en cada sesión, evitar que los alumnos avancen antes de tiempo o desbloquear todo al final como repaso.',
+      'También puede adaptar el texto introductorio, el texto principal de cada tarjeta, el apartado Recuerda y las actividades de tipo Elige, Relaciona u Ordena.',
+    ],
+  },
+  {
+    title: 'Recomendaciones didácticas',
+    items: [
+      'Preparar la clase antes de compartir el enlace con los alumnos.',
+      'Crear una clase distinta para cada grupo si se quieren configuraciones diferentes.',
+      'Desbloquear solo los bloques necesarios para cada sesión.',
+      'Revisar los textos editados antes de usarlos con alumnos.',
+      'Utilizar las actividades como comprobación rápida de comprensión.',
+      'Combinar el trabajo digital con diálogo en clase y explicación del profesor.',
+    ],
+  },
+];
+
 const cardActivities = {
   'Lugar de la celebración': [
     { type: 'quiz', prompt: '¿Qué es la iglesia?', options: ['Un lugar sagrado donde nos reunimos los cristianos', 'Una sala cualquiera para reuniones', 'Un lugar solo para mirar imágenes'], answer: 'Un lugar sagrado donde nos reunimos los cristianos' },
@@ -516,6 +596,25 @@ function TeacherModal({
       <div className="modal-content teacher-modal" onClick={e => e.stopPropagation()}>
         <button className="modal-close" onClick={onClose}><X /></button>
         <h2 className="modal-title">Acceso profesor</h2>
+        <details className="teacher-guide">
+          <summary>
+            <span><BookOpen size={18} /> Guía para el profesor</span>
+            <ChevronDown className="teacher-guide-icon" size={18} />
+          </summary>
+          <div className="teacher-guide-content">
+            {teacherGuide.map((section) => (
+              <section className="teacher-guide-section" key={section.title}>
+                <h3>{section.title}</h3>
+                {section.paragraphs?.map((paragraph) => <p key={paragraph}>{paragraph}</p>)}
+                {section.items && (
+                  <ul>
+                    {section.items.map((item) => <li key={item}>{item}</li>)}
+                  </ul>
+                )}
+              </section>
+            ))}
+          </div>
+        </details>
         {firebaseEnabled && !teacher && (
           <div className="teacher-login">
             <p>Entra con tu cuenta de Google para guardar tus clases y usarlas desde otros ordenadores.</p>
