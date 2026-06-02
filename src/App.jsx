@@ -701,11 +701,11 @@ function TeacherPage({
               <button className="secondary-button" type="button" onClick={onLockAll} disabled={needsClass}>Bloquear todo</button>
             </div>
             <div className="teacher-section-list">
-              {misaData.map((section) => {
+              {misaData.map((section, sectionIndex) => {
                 const isLocked = lockedSections.includes(section.id);
                 return (
                   <button className={isLocked ? 'teacher-section locked' : 'teacher-section'} type="button" key={section.id} onClick={() => onToggleSection(section.id)} disabled={needsClass}>
-                    <span>Parte {section.id}. {section.title}</span>
+                    <span>Parte {sectionIndex}. {section.title}</span>
                     <strong>{isLocked ? 'Bloqueada' : 'Desbloqueada'}</strong>
                   </button>
                 );
