@@ -482,6 +482,146 @@ function TeacherLoginModal({ firebaseEnabled, onClose, onGoogleLogin, onLocalLog
   );
 }
 
+const addUniqueName = (names, name) => names.includes(name) ? names : [...names, name];
+
+const getTeacherGameQuestions = (sections) => sections.flatMap((section) => section.cards.flatMap((card) => {
+  const activities = card.activities || cardActivities[card.title] || [];
+  return activities.map((activity, activityIndex) => {
+    const baseQuestion = {
+      id: `${section.id}-${card.title}-${activityIndex}`,
+      part: section.title,
+      card: card.title,
+    };
+    if (activity.type === 'match') {
+      return {
+        ...baseQuestion,
+        type: 'Relaciona',
+        prompt: activity.prompt || 'Relaciona cada concepto con su significado.',
+        options: (activity.pairs || []).map(([term]) => term).filter(Boolean),
+        answer: (activity.pairs || []).map(([term, meaning]) => `${term}: ${meaning}`).join(' / '),
+      };
+    }
+    if (activity.type === 'order') {
+      return {
+        ...baseQuestion,
+        type: 'Ordena',
+        prompt: activity.prompt || 'Ordena los pasos.',
+        options: [...(activity.steps || [])].reverse().filter(Boolean),
+        answer: (activity.steps || []).join(' -> '),
+      };
+    }
+    return {
+      ...baseQuestion,
+      type: 'Elige',
+      prompt: activity.prompt || 'Pregunta.',
+      options: activity.options || [],
+      answer: activity.answer || '',
+    };
+  });
+}));
+
+function TeacherGame({ sections, onClose }) {
+  const [studentText, setStudentText] = useState('');
+  const [selectedStudent, setSelectedStudent] = useState('');
+  const [currentQuestion, setCurrentQuestion] = useState(null);
+  const [isSpinning, setIsSpinning] = useState(false);
+  const [correctStudents, setCorrectStudents] = useState([]);
+  const [regularStudents, setRegularStudents] = useState([]);
+  const spinTimeoutRef = useRef(null);
+  const questions = getTeacherGameQuestions(sections);
+  const students = studentText
+    .split(/\n|,|;/)
+    .map((name) => name.trim())
+    .filter(Boolean);
+
+  useEffect(() => () => window.clearTimeout(spinTimeoutRef.current), []);
+
+  const spinStudent = () => {
+    if (!students.length || !questions.length || isSpinning) return;
+    setIsSpinning(true);
+    setCurrentQuestion(null);
+    const startedAt = Date.now();
+    const spin = () => {
+      setSelectedStudent(students[Math.floor(Math.random() * students.length)]);
+      if (Date.now() - startedAt < 1800) {
+        spinTimeoutRef.current = window.setTimeout(spin, 90);
+        return;
+      }
+      setIsSpinning(false);
+      setSelectedStudent(students[Math.floor(Math.random() * students.length)]);
+      setCurrentQuestion(questions[Math.floor(Math.random() * questions.length)]);
+    };
+    spin();
+  };
+
+  const gradeAnswer = (grade) => {
+    if (!selectedStudent) return;
+    if (grade === 'correct') setCorrectStudents((names) => addUniqueName(names, selectedStudent));
+    if (grade === 'regular') setRegularStudents((names) => addUniqueName(names, selectedStudent));
+    setCurrentQuestion(null);
+    setSelectedStudent('');
+  };
+
+  return (
+    <div className="teacher-game">
+      <div className="teacher-game-header">
+        <div>
+          <p className="eyebrow">Juego de clase</p>
+          <h3>Ruleta de preguntas</h3>
+        </div>
+        <button className="secondary-button" type="button" onClick={onClose}>Volver a Profesor</button>
+      </div>
+      <div className="teacher-game-grid">
+        <section className="teacher-game-setup">
+          <label htmlFor="student-list">Lista de alumnos</label>
+          <textarea id="student-list" value={studentText} onChange={(event) => setStudentText(event.target.value)} placeholder="Pega aquí los nombres, uno por línea o separados por comas" rows="9" />
+          <p>{students.length} alumnos preparados. {questions.length} preguntas disponibles.</p>
+          <button className="primary-button spin-button" type="button" onClick={spinStudent} disabled={!students.length || !questions.length || isSpinning}>
+            {isSpinning ? 'Girando...' : 'Girar ruleta'}
+          </button>
+        </section>
+        <section className="teacher-game-stage">
+          <div className={isSpinning ? 'roulette-name spinning' : 'roulette-name'}>{selectedStudent || 'Pulsa la ruleta'}</div>
+          {currentQuestion ? (
+            <div className="game-question-card">
+              <p className="eyebrow">{currentQuestion.part} · {currentQuestion.card} · {currentQuestion.type}</p>
+              <h4>{currentQuestion.prompt}</h4>
+              {currentQuestion.options.length > 0 && (
+                <div className="game-question-options">
+                  {currentQuestion.options.map((option) => <span key={option}>{option}</span>)}
+                </div>
+              )}
+              {currentQuestion.answer && (
+                <details className="game-answer">
+                  <summary>Ver respuesta orientativa</summary>
+                  <p>{currentQuestion.answer}</p>
+                </details>
+              )}
+              <div className="game-grade-actions">
+                <button className="primary-button correct" type="button" onClick={() => gradeAnswer('correct')}>Correcta</button>
+                <button className="secondary-button regular" type="button" onClick={() => gradeAnswer('regular')}>Regular</button>
+                <button className="secondary-button wrong" type="button" onClick={() => gradeAnswer('wrong')}>Incorrecta</button>
+              </div>
+            </div>
+          ) : (
+            <p className="game-empty">Al detenerse la ruleta aparecerá aquí una pregunta para el alumno seleccionado.</p>
+          )}
+        </section>
+      </div>
+      <div className="game-results">
+        <section>
+          <h4>Correctas</h4>
+          {correctStudents.length ? <ul>{correctStudents.map((name) => <li key={name}>{name}</li>)}</ul> : <p>Todavía no hay alumnos.</p>}
+        </section>
+        <section>
+          <h4>Regulares</h4>
+          {regularStudents.length ? <ul>{regularStudents.map((name) => <li key={name}>{name}</li>)}</ul> : <p>Todavía no hay alumnos.</p>}
+        </section>
+      </div>
+    </div>
+  );
+}
+
 function TeacherPage({
   activeClass,
   classes,
@@ -515,6 +655,7 @@ function TeacherPage({
   const [teacherEmailMessage, setTeacherEmailMessage] = useState('');
   const [actionError, setActionError] = useState('');
   const [isCreatingClass, setIsCreatingClass] = useState(false);
+  const [showTeacherGame, setShowTeacherGame] = useState(false);
   const textTextareaRef = useRef(null);
   const rememberTextareaRef = useRef(null);
   const introTextareaRef = useRef(null);
@@ -639,8 +780,15 @@ function TeacherPage({
             <p className="eyebrow">Modo profesor</p>
             <h2>Acceso profesor</h2>
           </div>
-          <button className="secondary-button" type="button" onClick={onClose}>Volver</button>
+          <div className="teacher-page-header-actions">
+            <button className="primary-button" type="button" onClick={() => setShowTeacherGame(true)}>Juego</button>
+            <button className="secondary-button" type="button" onClick={onClose}>Volver</button>
+          </div>
         </div>
+        {showTeacherGame ? (
+          <TeacherGame sections={editableSections} onClose={() => setShowTeacherGame(false)} />
+        ) : (
+          <>
         <details className="teacher-guide">
           <summary>
             <span><BookOpen size={18} /> Guía para el profesor</span>
@@ -837,6 +985,8 @@ function TeacherPage({
               </div>
             )}
           </div>
+          </>
+        )}
       </div>
     </main>
   );
