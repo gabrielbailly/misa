@@ -511,7 +511,7 @@ const getTeacherGameQuestions = () => teacherGameQuestions;
 
 function TeacherGame({ sections, onClose }) {
   const [studentText, setStudentText] = useState('');
-  const [showStudentSetup, setShowStudentSetup] = useState(true);
+  const [showStudentSetup, setShowStudentSetup] = useState(false);
   const [selectedStudent, setSelectedStudent] = useState('');
   const [currentQuestion, setCurrentQuestion] = useState(null);
   const [isSpinning, setIsSpinning] = useState(false);
@@ -596,32 +596,43 @@ function TeacherGame({ sections, onClose }) {
       <div className="teacher-game-header">
         <div>
           <p className="eyebrow">Juego de clase</p>
-          <h3>Ruleta de preguntas</h3>
+          <h3>¿Conoces lo que pasa en Misa?</h3>
         </div>
-        <button className="secondary-button" type="button" onClick={onClose}>Volver a Profesor</button>
+        <div className="teacher-page-header-actions">
+          <button className="primary-button" type="button" onClick={() => setShowStudentSetup(true)}>Lista de alumnos</button>
+          <button className="secondary-button" type="button" onClick={onClose}>Volver a Profesor</button>
+        </div>
       </div>
-      <div className="teacher-game-grid">
-        {showStudentSetup ? (
-          <section className="teacher-game-setup">
+      {showStudentSetup && (
+        <div className="modal-overlay" onClick={() => setShowStudentSetup(false)}>
+          <section className="teacher-game-setup student-list-modal" onClick={e => e.stopPropagation()}>
+            <button className="modal-close" type="button" onClick={() => setShowStudentSetup(false)}><X /></button>
             <label htmlFor="student-list">Lista de alumnos</label>
-            <textarea id="student-list" value={studentText} onChange={(event) => setStudentText(event.target.value)} placeholder="Pega aquí los nombres, uno por línea o separados por comas" rows="9" />
-            <p>{students.length} alumnos preparados. {questions.length} preguntas disponibles.</p>
-            <button className="primary-button" type="button" onClick={() => setShowStudentSetup(false)} disabled={!students.length}>Guardar lista y ocultar</button>
+            <textarea id="student-list" value={studentText} onChange={(event) => setStudentText(event.target.value)} placeholder="Pega aquí los nombres, uno por línea o separados por comas" rows="9" autoFocus />
+            <p>{students.length} alumnos preparados. {availableStudents.length} quedan por salir. {questions.length} preguntas disponibles.</p>
+            <button className="primary-button" type="button" onClick={() => setShowStudentSetup(false)} disabled={!students.length}>Guardar lista</button>
           </section>
-        ) : (
-          <section className="teacher-game-setup compact">
-            <strong>{students.length} alumnos cargados</strong>
-            <p>{availableStudents.length} quedan por salir.</p>
-            <button className="secondary-button" type="button" onClick={() => setShowStudentSetup(true)}>Editar lista</button>
-          </section>
-        )}
+        </div>
+      )}
+      <div className="teacher-game-grid">
         <section className="teacher-game-stage">
+          <p className="game-empty">{students.length ? `${students.length} alumnos cargados. ${availableStudents.length} quedan por salir.` : 'Pulsa Lista de alumnos para pegar los nombres.'}</p>
           <div className={isSpinning ? 'roulette-name spinning' : 'roulette-name'}>{selectedStudent || 'Pulsa la ruleta'}</div>
           <button className="primary-button spin-button" type="button" onClick={spinStudent} disabled={!availableStudents.length || !questions.length || isSpinning || Boolean(currentQuestion)}>
             {isSpinning ? 'Girando...' : availableStudents.length ? 'Girar ruleta' : 'Ya han salido todos'}
           </button>
           <p className="game-empty">Al detenerse la ruleta aparecerá una pregunta en el centro de la pantalla.</p>
         </section>
+        <div className="game-results">
+          <section>
+            <h4>Correctas</h4>
+            {correctStudents.length ? <ul>{correctStudents.map((name) => <li key={name}>{name}</li>)}</ul> : <p>Todavía no hay alumnos.</p>}
+          </section>
+          <section>
+            <h4>Regulares</h4>
+            {regularStudents.length ? <ul>{regularStudents.map((name) => <li key={name}>{name}</li>)}</ul> : <p>Todavía no hay alumnos.</p>}
+          </section>
+        </div>
       </div>
       {currentQuestion && (
         <div className="modal-overlay game-question-overlay">
@@ -642,16 +653,6 @@ function TeacherGame({ sections, onClose }) {
           </div>
         </div>
       )}
-      <div className="game-results">
-        <section>
-          <h4>Correctas</h4>
-          {correctStudents.length ? <ul>{correctStudents.map((name) => <li key={name}>{name}</li>)}</ul> : <p>Todavía no hay alumnos.</p>}
-        </section>
-        <section>
-          <h4>Regulares</h4>
-          {regularStudents.length ? <ul>{regularStudents.map((name) => <li key={name}>{name}</li>)}</ul> : <p>Todavía no hay alumnos.</p>}
-        </section>
-      </div>
     </div>
   );
 }
