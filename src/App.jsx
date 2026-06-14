@@ -484,39 +484,30 @@ function TeacherLoginModal({ firebaseEnabled, onClose, onGoogleLogin, onLocalLog
 
 const addUniqueName = (names, name) => names.includes(name) ? names : [...names, name];
 
-const getTeacherGameQuestions = (sections) => sections.flatMap((section) => section.cards.flatMap((card) => {
-  const activities = card.activities || cardActivities[card.title] || [];
-  return activities.map((activity, activityIndex) => {
-    const baseQuestion = {
-      id: `${section.id}-${card.title}-${activityIndex}`,
-      part: section.title,
-      card: card.title,
-    };
-    if (activity.type === 'match') {
-      const terms = (activity.pairs || []).map(([term]) => term).filter(Boolean).join(', ');
-      return {
-        ...baseQuestion,
-        type: 'Pregunta abierta',
-        prompt: terms ? `Explica qué significan estos conceptos: ${terms}.` : (activity.prompt || 'Explica los conceptos principales de este apartado.'),
-        answer: (activity.pairs || []).map(([term, meaning]) => `${term}: ${meaning}`).join(' / '),
-      };
-    }
-    if (activity.type === 'order') {
-      return {
-        ...baseQuestion,
-        type: 'Pregunta abierta',
-        prompt: activity.steps?.length ? `Explica con tus palabras qué ocurre en este orden: ${activity.steps.join(', ')}.` : (activity.prompt || 'Explica el orden de este momento de la Misa.'),
-        answer: (activity.steps || []).join(' -> '),
-      };
-    }
-    return {
-      ...baseQuestion,
-      type: 'Pregunta abierta',
-      prompt: activity.prompt || 'Pregunta.',
-      answer: activity.answer || '',
-    };
-  });
-}));
+const teacherGameQuestions = [
+  { id: 'church-1', part: 'Lugar de la celebración', card: 'La iglesia', prompt: '¿Por qué la iglesia es un lugar especial para los cristianos?', answer: 'Porque es la casa de Dios y allí celebramos la Eucaristía.' },
+  { id: 'church-2', part: 'Lugar de la celebración', card: 'Elementos de la iglesia', prompt: '¿Para qué sirve el altar en la Misa?', answer: 'Es la mesa donde se celebra el sacrificio de Jesús.' },
+  { id: 'church-3', part: 'Lugar de la celebración', card: 'Elementos de la iglesia', prompt: '¿Dónde se proclama la Palabra de Dios?', answer: 'En el ambón.' },
+  { id: 'objects-1', part: 'Lugar de la celebración', card: 'Objetos litúrgicos', prompt: '¿Qué se pone en el cáliz?', answer: 'El vino que será la Sangre de Cristo.' },
+  { id: 'objects-2', part: 'Lugar de la celebración', card: 'Objetos litúrgicos', prompt: '¿Por qué los objetos de la Misa se tratan con respeto?', answer: 'Porque se usan para celebrar la Eucaristía y algunos tocan el Cuerpo y la Sangre de Jesús.' },
+  { id: 'rites-1', part: 'Ritos iniciales', card: 'Inicio de la Misa', prompt: '¿Qué hacemos al empezar la Misa?', answer: 'Nos reunimos, saludamos al Señor y nos preparamos para celebrar.' },
+  { id: 'rites-2', part: 'Ritos iniciales', card: 'Acto penitencial', prompt: '¿Qué pedimos a Dios en el acto penitencial?', answer: 'Le pedimos perdón por nuestros pecados.' },
+  { id: 'rites-3', part: 'Ritos iniciales', card: 'Gloria', prompt: '¿Qué hacemos cuando rezamos o cantamos el Gloria?', answer: 'Alabamos a Dios con alegría.' },
+  { id: 'word-1', part: 'Liturgia de la Palabra', card: 'Lecturas', prompt: '¿Quién nos habla en las lecturas de la Misa?', answer: 'Dios nos habla por su Palabra.' },
+  { id: 'word-2', part: 'Liturgia de la Palabra', card: 'Evangelio', prompt: '¿Por qué escuchamos el Evangelio con atención?', answer: 'Porque en el Evangelio nos habla Jesús.' },
+  { id: 'word-3', part: 'Liturgia de la Palabra', card: 'Homilía', prompt: '¿Para qué sirve la homilía?', answer: 'Para ayudarnos a entender la Palabra de Dios y vivirla.' },
+  { id: 'word-4', part: 'Liturgia de la Palabra', card: 'Credo', prompt: '¿Qué decimos en el Credo?', answer: 'Decimos que creemos en Dios y proclamamos nuestra fe.' },
+  { id: 'eucharist-1', part: 'Liturgia Eucarística', card: 'Ofrendas', prompt: '¿Qué se presenta en las ofrendas?', answer: 'El pan y el vino.' },
+  { id: 'eucharist-2', part: 'Liturgia Eucarística', card: 'Plegaria Eucarística', prompt: '¿A quién damos gracias en la Plegaria Eucarística?', answer: 'A Dios Padre.' },
+  { id: 'eucharist-3', part: 'Liturgia Eucarística', card: 'Consagración', prompt: '¿Qué ocurre en la consagración?', answer: 'El pan y el vino se transforman en el Cuerpo y la Sangre de Cristo.' },
+  { id: 'eucharist-4', part: 'Liturgia Eucarística', card: 'Padre nuestro', prompt: '¿Qué oración rezamos antes de comulgar?', answer: 'El Padre nuestro.' },
+  { id: 'communion-1', part: 'Liturgia Eucarística', card: 'Comunión', prompt: '¿A quién recibimos en la Comunión?', answer: 'Recibimos a Jesús.' },
+  { id: 'communion-2', part: 'Liturgia Eucarística', card: 'Acción de gracias', prompt: '¿Qué hacemos después de recibir a Jesús?', answer: 'Damos gracias.' },
+  { id: 'ending-1', part: 'Rito de despedida', card: 'Bendición final', prompt: '¿Qué recibimos al final de la Misa?', answer: 'La bendición.' },
+  { id: 'ending-2', part: 'Rito de despedida', card: 'Envío', prompt: '¿Qué encargo recibimos al terminar la Misa?', answer: 'Llevar la Buena Noticia y vivir como cristianos.' },
+];
+
+const getTeacherGameQuestions = () => teacherGameQuestions;
 
 function TeacherGame({ sections, onClose }) {
   const [studentText, setStudentText] = useState('');
@@ -528,6 +519,8 @@ function TeacherGame({ sections, onClose }) {
   const [correctStudents, setCorrectStudents] = useState([]);
   const [regularStudents, setRegularStudents] = useState([]);
   const spinTimeoutRef = useRef(null);
+  const soundIntervalRef = useRef(null);
+  const audioContextRef = useRef(null);
   const questions = getTeacherGameQuestions(sections);
   const students = studentText
     .split(/\n|,|;/)
@@ -535,12 +528,44 @@ function TeacherGame({ sections, onClose }) {
     .filter(Boolean);
   const availableStudents = students.filter((name) => !usedStudents.includes(name));
 
-  useEffect(() => () => window.clearTimeout(spinTimeoutRef.current), []);
+  useEffect(() => () => {
+    window.clearTimeout(spinTimeoutRef.current);
+    window.clearInterval(soundIntervalRef.current);
+    audioContextRef.current?.close();
+  }, []);
+
+  const playSpinTick = () => {
+    const AudioContext = window.AudioContext || window.webkitAudioContext;
+    if (!AudioContext) return;
+    const audioContext = audioContextRef.current || new AudioContext();
+    audioContextRef.current = audioContext;
+    const oscillator = audioContext.createOscillator();
+    const gain = audioContext.createGain();
+    oscillator.type = 'square';
+    oscillator.frequency.value = 520 + Math.random() * 260;
+    gain.gain.setValueAtTime(0.035, audioContext.currentTime);
+    gain.gain.exponentialRampToValueAtTime(0.001, audioContext.currentTime + 0.055);
+    oscillator.connect(gain);
+    gain.connect(audioContext.destination);
+    oscillator.start();
+    oscillator.stop(audioContext.currentTime + 0.055);
+  };
+
+  const startSpinSound = () => {
+    playSpinTick();
+    window.clearInterval(soundIntervalRef.current);
+    soundIntervalRef.current = window.setInterval(playSpinTick, 95);
+  };
+
+  const stopSpinSound = () => {
+    window.clearInterval(soundIntervalRef.current);
+  };
 
   const spinStudent = () => {
     if (!availableStudents.length || !questions.length || isSpinning || currentQuestion) return;
     setIsSpinning(true);
     setCurrentQuestion(null);
+    startSpinSound();
     const startedAt = Date.now();
     const spin = () => {
       setSelectedStudent(availableStudents[Math.floor(Math.random() * availableStudents.length)]);
@@ -549,6 +574,7 @@ function TeacherGame({ sections, onClose }) {
         return;
       }
       const nextStudent = availableStudents[Math.floor(Math.random() * availableStudents.length)];
+      stopSpinSound();
       setIsSpinning(false);
       setSelectedStudent(nextStudent);
       setUsedStudents((names) => addUniqueName(names, nextStudent));
@@ -594,27 +620,28 @@ function TeacherGame({ sections, onClose }) {
           <button className="primary-button spin-button" type="button" onClick={spinStudent} disabled={!availableStudents.length || !questions.length || isSpinning || Boolean(currentQuestion)}>
             {isSpinning ? 'Girando...' : availableStudents.length ? 'Girar ruleta' : 'Ya han salido todos'}
           </button>
-          {currentQuestion ? (
-            <div className="game-question-card">
-              <p className="eyebrow">{currentQuestion.part} · {currentQuestion.card} · {currentQuestion.type}</p>
-              <h4>{currentQuestion.prompt}</h4>
-              {currentQuestion.answer && (
-                <details className="game-answer">
-                  <summary>Ver respuesta orientativa</summary>
-                  <p>{currentQuestion.answer}</p>
-                </details>
-              )}
-              <div className="game-grade-actions">
-                <button className="primary-button correct" type="button" onClick={() => gradeAnswer('correct')}>Correcta</button>
-                <button className="secondary-button regular" type="button" onClick={() => gradeAnswer('regular')}>Regular</button>
-                <button className="secondary-button wrong" type="button" onClick={() => gradeAnswer('wrong')}>Incorrecta</button>
-              </div>
-            </div>
-          ) : (
-            <p className="game-empty">Al detenerse la ruleta aparecerá aquí una pregunta para el alumno seleccionado.</p>
-          )}
+          <p className="game-empty">Al detenerse la ruleta aparecerá una pregunta en el centro de la pantalla.</p>
         </section>
       </div>
+      {currentQuestion && (
+        <div className="modal-overlay game-question-overlay">
+          <div className="game-question-card game-question-modal" onClick={e => e.stopPropagation()}>
+            <p className="eyebrow">{selectedStudent} · {currentQuestion.part} · {currentQuestion.card}</p>
+            <h4>{currentQuestion.prompt}</h4>
+            {currentQuestion.answer && (
+              <details className="game-answer">
+                <summary>Ver respuesta orientativa</summary>
+                <p>{currentQuestion.answer}</p>
+              </details>
+            )}
+            <div className="game-grade-actions">
+              <button className="primary-button correct" type="button" onClick={() => gradeAnswer('correct')}>Correcta</button>
+              <button className="secondary-button regular" type="button" onClick={() => gradeAnswer('regular')}>Regular</button>
+              <button className="secondary-button wrong" type="button" onClick={() => gradeAnswer('wrong')}>Incorrecta</button>
+            </div>
+          </div>
+        </div>
+      )}
       <div className="game-results">
         <section>
           <h4>Correctas</h4>
