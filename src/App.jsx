@@ -38,6 +38,7 @@ const ACTIVE_CLASS_KEY = 'misa-active-class';
 const TEXT_OVERRIDES_KEY = 'misa-text-overrides';
 const INTRO_OVERRIDES_KEY = 'misa-intro-overrides';
 const ACTIVITY_OVERRIDES_KEY = 'misa-activity-overrides';
+const GAME_VISIBLE_KEY = 'misa-game-visible';
 const TEACHER_EMAILS = (import.meta.env.VITE_TEACHER_EMAILS || '')
   .split(',')
   .map((email) => email.trim().toLowerCase())
@@ -538,7 +539,7 @@ const teacherGameQuestions = [
 
 const getTeacherGameQuestions = () => teacherGameQuestions;
 
-function TeacherGame({ sections, onClose }) {
+function TeacherGame({ closeLabel = 'Volver a Profesor', sections, onClose }) {
   const [studentText, setStudentText] = useState('');
   const [showStudentSetup, setShowStudentSetup] = useState(false);
   const [selectedStudent, setSelectedStudent] = useState('');
@@ -629,7 +630,7 @@ function TeacherGame({ sections, onClose }) {
         </div>
         <div className="teacher-page-header-actions">
           <button className="primary-button" type="button" onClick={() => setShowStudentSetup(true)}>Lista de alumnos</button>
-          <button className="secondary-button" type="button" onClick={onClose}>Volver a Profesor</button>
+          <button className="secondary-button" type="button" onClick={onClose}>{closeLabel}</button>
         </div>
       </div>
       {showStudentSetup && (
@@ -693,6 +694,7 @@ function TeacherPage({
   firebaseEnabled,
   introText,
   isSaving,
+  gameVisible,
   lockedSections,
   onClose,
   onCreateClass,
@@ -700,6 +702,7 @@ function TeacherPage({
   onLogout,
   onAddTeacherEmail,
   onSaveActivities,
+  onToggleGameVisible,
   onSaveIntro,
   onSaveText,
   onSelectClass,
@@ -846,6 +849,9 @@ function TeacherPage({
           </div>
           <div className="teacher-page-header-actions">
             <button className="primary-button" type="button" onClick={() => setShowTeacherGame(true)}>Juego</button>
+            <button className="secondary-button" type="button" onClick={onToggleGameVisible} disabled={needsClass}>
+              {gameVisible ? 'Ocultar Juego a alumnos' : 'Mostrar Juego a alumnos'}
+            </button>
             <button className="secondary-button" type="button" onClick={onClose}>Volver</button>
           </div>
         </div>
@@ -1397,6 +1403,7 @@ export default function App() {
   const [showAppInfo, setShowAppInfo] = useState(false);
   const [showTeacherPage, setShowTeacherPage] = useState(() => isTeacherRoute());
   const [showTeacherLogin, setShowTeacherLogin] = useState(false);
+  const [showStudentGame, setShowStudentGame] = useState(false);
   const [isLocalTeacher, setIsLocalTeacher] = useState(false);
   const [pendingTeacherNavigation, setPendingTeacherNavigation] = useState(false);
   const [teacher, setTeacher] = useState(null);
@@ -1433,6 +1440,7 @@ export default function App() {
       return [];
     }
   });
+  const [gameVisible, setGameVisible] = useState(() => localStorage.getItem(GAME_VISIBLE_KEY) === 'true');
   const editableSections = applyActivityOverrides(applyTextOverrides(cloneMisaData(), textOverrides), activityOverrides);
   const introText = getIntroText(introOverrides);
   const canOpenTeacherPage = isFirebaseConfigured ? Boolean(teacher && teacherAllowed) : isLocalTeacher;
@@ -1557,6 +1565,7 @@ export default function App() {
     setTextOverrides(nextClass.textOverrides || {});
     setIntroOverrides(nextClass.introOverrides || []);
     setActivityOverrides(nextClass.activityOverrides || {});
+    setGameVisible(Boolean(nextClass.gameVisible));
     localStorage.setItem(ACTIVE_CLASS_KEY, nextClass.id);
   };
 
@@ -1583,6 +1592,7 @@ export default function App() {
       textOverrides: getTextOverrides(cloneMisaData()),
       introOverrides: celebrationIntro,
       activityOverrides: cardActivities,
+      gameVisible: false,
       createdAt: serverTimestamp(),
       updatedAt: serverTimestamp(),
     };
@@ -1609,7 +1619,8 @@ export default function App() {
     nextLockedSections,
     nextTextOverrides = textOverrides,
     nextIntroOverrides = introOverrides,
-    nextActivityOverrides = activityOverrides
+    nextActivityOverrides = activityOverrides,
+    nextGameVisible = gameVisible
   ) => {
     if (!isFirebaseConfigured || !db || !activeClass) {
       if (isFirebaseConfigured) return;
@@ -1617,6 +1628,7 @@ export default function App() {
       localStorage.setItem(TEXT_OVERRIDES_KEY, JSON.stringify(nextTextOverrides));
       localStorage.setItem(INTRO_OVERRIDES_KEY, JSON.stringify(nextIntroOverrides));
       localStorage.setItem(ACTIVITY_OVERRIDES_KEY, JSON.stringify(nextActivityOverrides));
+      localStorage.setItem(GAME_VISIBLE_KEY, JSON.stringify(nextGameVisible));
       return;
     }
     setIsSaving(true);
@@ -1626,6 +1638,7 @@ export default function App() {
         textOverrides: nextTextOverrides,
         introOverrides: nextIntroOverrides,
         activityOverrides: nextActivityOverrides,
+        gameVisible: nextGameVisible,
         updatedAt: serverTimestamp(),
       }, { merge: true });
     } finally {
@@ -1669,6 +1682,12 @@ export default function App() {
     await saveClassState(lockedSections, textOverrides, introOverrides, nextActivityOverrides);
   };
 
+  const toggleGameVisible = async () => {
+    const nextGameVisible = !gameVisible;
+    setGameVisible(nextGameVisible);
+    await saveClassState(lockedSections, textOverrides, introOverrides, activityOverrides, nextGameVisible);
+  };
+
   return (
     <div className="page-shell">
       {prayerModal && (
@@ -1694,6 +1713,7 @@ export default function App() {
           classes={classes}
           editableSections={editableSections}
           firebaseEnabled={isFirebaseConfigured}
+          gameVisible={gameVisible}
           introText={introText}
           isSaving={isSaving}
           lockedSections={lockedSections}
@@ -1706,11 +1726,18 @@ export default function App() {
           onSaveIntro={saveIntro}
           onSaveText={saveText}
           onSelectClass={selectClass}
+          onToggleGameVisible={toggleGameVisible}
           onUnlockAll={() => saveLockedSections([])}
           onToggleSection={toggleLockedSection}
           teacher={teacher}
           teacherAllowed={teacherAllowed}
         />
+      ) : showStudentGame ? (
+        <main className="teacher-page">
+          <div className="teacher-page-shell">
+            <TeacherGame closeLabel="Volver" sections={editableSections} onClose={() => setShowStudentGame(false)} />
+          </div>
+        </main>
       ) : showCover ? (
         <header className="hero cover-hero">
           <nav className="cover-topbar">
@@ -1733,6 +1760,7 @@ export default function App() {
         <section className="content-section" id="partes">
           <div className="content-actions">
             <button className="back-home-button primary-button" type="button" onClick={() => setShowCover(true)}>Volver al inicio</button>
+            {gameVisible && <button className="teacher-access-button primary-button" type="button" onClick={() => setShowStudentGame(true)}>Juego</button>}
             <button className="teacher-access-button primary-button" type="button" onClick={openTeacherAccess}>Profesor</button>
           </div>
           <h2 className="eucaristia-heading">La celebración de la Eucaristía</h2>
