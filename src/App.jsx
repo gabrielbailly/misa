@@ -39,6 +39,7 @@ const TEXT_OVERRIDES_KEY = 'misa-text-overrides';
 const INTRO_OVERRIDES_KEY = 'misa-intro-overrides';
 const ACTIVITY_OVERRIDES_KEY = 'misa-activity-overrides';
 const GAME_VISIBLE_KEY = 'misa-game-visible';
+const GAME_QUESTIONS_KEY = 'misa-game-questions';
 const TEACHER_EMAILS = (import.meta.env.VITE_TEACHER_EMAILS || '')
   .split(',')
   .map((email) => email.trim().toLowerCase())
@@ -484,6 +485,19 @@ function TeacherLoginModal({ firebaseEnabled, onClose, onGoogleLogin, onLocalLog
 }
 
 const addUniqueName = (names, name) => names.includes(name) ? names : [...names, name];
+const getUniqueNames = (text) => {
+  const seenNames = new Set();
+  return text
+    .split(/\n|,|;/)
+    .map((name) => name.trim())
+    .filter(Boolean)
+    .filter((name) => {
+      const normalizedName = name.toLowerCase();
+      if (seenNames.has(normalizedName)) return false;
+      seenNames.add(normalizedName);
+      return true;
+    });
+};
 
 const teacherGameQuestions = [
   { id: 'church-1', part: 'Lugar de la celebración', card: 'La iglesia', prompt: '¿Por qué la iglesia es un lugar especial para los cristianos?', answer: 'Porque es la casa de Dios y allí celebramos la Eucaristía.' },
@@ -537,11 +551,13 @@ const teacherGameQuestions = [
   { id: 'ending-2', part: 'Rito de despedida', card: 'Envío', prompt: '¿Qué encargo recibimos al terminar la Misa?', answer: 'Llevar la Buena Noticia y vivir como cristianos.' },
 ];
 
-const getTeacherGameQuestions = () => teacherGameQuestions;
+const getTeacherGameQuestions = (questions) => questions?.length ? questions : teacherGameQuestions;
 
-function TeacherGame({ closeLabel = 'Volver a Profesor', sections, onClose }) {
+function TeacherGame({ canEditQuestions = false, closeLabel = 'Volver a Profesor', onClose, onSaveQuestions, questions: savedQuestions }) {
   const [studentText, setStudentText] = useState('');
   const [showStudentSetup, setShowStudentSetup] = useState(false);
+  const [showQuestionEditor, setShowQuestionEditor] = useState(false);
+  const [questionDrafts, setQuestionDrafts] = useState(() => getTeacherGameQuestions(savedQuestions));
   const [selectedStudent, setSelectedStudent] = useState('');
   const [currentQuestion, setCurrentQuestion] = useState(null);
   const [isSpinning, setIsSpinning] = useState(false);
@@ -553,12 +569,13 @@ function TeacherGame({ closeLabel = 'Volver a Profesor', sections, onClose }) {
   const questionTimeoutRef = useRef(null);
   const soundIntervalRef = useRef(null);
   const audioContextRef = useRef(null);
-  const questions = getTeacherGameQuestions(sections);
-  const students = studentText
-    .split(/\n|,|;/)
-    .map((name) => name.trim())
-    .filter(Boolean);
+  const questions = getTeacherGameQuestions(savedQuestions);
+  const students = getUniqueNames(studentText);
   const availableStudents = students.filter((name) => !usedStudents.includes(name));
+
+  useEffect(() => {
+    setQuestionDrafts(getTeacherGameQuestions(savedQuestions));
+  }, [savedQuestions]);
 
   useEffect(() => () => {
     window.clearTimeout(spinTimeoutRef.current);
@@ -630,6 +647,36 @@ function TeacherGame({ closeLabel = 'Volver a Profesor', sections, onClose }) {
     setSelectedStudent('');
   };
 
+  const saveQuestionDrafts = (nextQuestions) => {
+    setQuestionDrafts(nextQuestions);
+  };
+
+  const persistQuestionDrafts = async () => {
+    await onSaveQuestions?.(questionDrafts);
+    setShowQuestionEditor(false);
+  };
+
+  const updateQuestion = (questionId, field, value) => {
+    saveQuestionDrafts(questionDrafts.map((question) => question.id === questionId ? { ...question, [field]: value } : question));
+  };
+
+  const deleteQuestion = (questionId) => {
+    saveQuestionDrafts(questionDrafts.filter((question) => question.id !== questionId));
+  };
+
+  const addQuestion = () => {
+    saveQuestionDrafts([
+      ...questionDrafts,
+      {
+        id: `custom-${Date.now()}`,
+        part: 'Juego',
+        card: 'Pregunta nueva',
+        prompt: 'Escribe aquí la pregunta.',
+        answer: 'Escribe aquí la respuesta orientativa.',
+      },
+    ]);
+  };
+
   return (
     <div className="teacher-game">
       <div className="teacher-game-header">
@@ -639,6 +686,7 @@ function TeacherGame({ closeLabel = 'Volver a Profesor', sections, onClose }) {
         </div>
         <div className="teacher-page-header-actions">
           <button className="primary-button" type="button" onClick={() => setShowStudentSetup(true)}>Lista de alumnos</button>
+          {canEditQuestions && <button className="secondary-button" type="button" onClick={() => setShowQuestionEditor(true)}>Editar preguntas</button>}
           <button className="secondary-button" type="button" onClick={onClose}>{closeLabel}</button>
         </div>
       </div>
@@ -648,8 +696,36 @@ function TeacherGame({ closeLabel = 'Volver a Profesor', sections, onClose }) {
             <button className="modal-close" type="button" onClick={() => setShowStudentSetup(false)}><X /></button>
             <label htmlFor="student-list">Lista de alumnos</label>
             <textarea id="student-list" value={studentText} onChange={(event) => setStudentText(event.target.value)} placeholder="Pega aquí los nombres, uno por línea o separados por comas" rows="9" autoFocus />
-            <p>{students.length} alumnos preparados. {availableStudents.length} quedan por salir. {questions.length} preguntas disponibles.</p>
+            <p>{students.length} alumnos preparados sin repetir. {availableStudents.length} quedan por salir. {questions.length} preguntas disponibles.</p>
             <button className="primary-button" type="button" onClick={() => setShowStudentSetup(false)} disabled={!students.length}>Guardar lista</button>
+          </section>
+        </div>
+      )}
+      {showQuestionEditor && (
+        <div className="modal-overlay" onClick={() => setShowQuestionEditor(false)}>
+          <section className="teacher-game-setup question-editor-modal" onClick={e => e.stopPropagation()}>
+            <button className="modal-close" type="button" onClick={() => setShowQuestionEditor(false)}><X /></button>
+            <div className="question-editor-header">
+              <div>
+                <p className="eyebrow">Juego de clase</p>
+                <h3>Editar preguntas</h3>
+              </div>
+              <div className="teacher-page-header-actions">
+                <button className="secondary-button" type="button" onClick={addQuestion}>Añadir pregunta</button>
+                <button className="primary-button" type="button" onClick={persistQuestionDrafts}>Guardar cambios</button>
+              </div>
+            </div>
+            <div className="question-editor-list">
+              {questionDrafts.map((question) => (
+                <div className="question-editor-card" key={question.id}>
+                  <input value={question.part} onChange={(event) => updateQuestion(question.id, 'part', event.target.value)} placeholder="Parte" />
+                  <input value={question.card} onChange={(event) => updateQuestion(question.id, 'card', event.target.value)} placeholder="Tema" />
+                  <textarea value={question.prompt} onChange={(event) => updateQuestion(question.id, 'prompt', event.target.value)} placeholder="Pregunta" rows="2" />
+                  <textarea value={question.answer} onChange={(event) => updateQuestion(question.id, 'answer', event.target.value)} placeholder="Respuesta orientativa" rows="2" />
+                  <button className="secondary-button wrong" type="button" onClick={() => deleteQuestion(question.id)}>Eliminar</button>
+                </div>
+              ))}
+            </div>
           </section>
         </div>
       )}
@@ -701,6 +777,7 @@ function TeacherPage({
   classes,
   editableSections,
   firebaseEnabled,
+  gameQuestions,
   introText,
   isSaving,
   gameVisible,
@@ -711,6 +788,7 @@ function TeacherPage({
   onLogout,
   onAddTeacherEmail,
   onSaveActivities,
+  onSaveGameQuestions,
   onToggleGameVisible,
   onSaveIntro,
   onSaveText,
@@ -865,7 +943,7 @@ function TeacherPage({
           </div>
         </div>
         {showTeacherGame ? (
-          <TeacherGame sections={editableSections} onClose={() => setShowTeacherGame(false)} />
+          <TeacherGame canEditQuestions onClose={() => setShowTeacherGame(false)} onSaveQuestions={onSaveGameQuestions} questions={gameQuestions} />
         ) : (
           <>
         <details className="teacher-guide">
@@ -1442,6 +1520,13 @@ export default function App() {
       return {};
     }
   });
+  const [gameQuestions, setGameQuestions] = useState(() => {
+    try {
+      return JSON.parse(localStorage.getItem(GAME_QUESTIONS_KEY)) || teacherGameQuestions;
+    } catch {
+      return teacherGameQuestions;
+    }
+  });
   const [lockedSections, setLockedSections] = useState(() => {
     try {
       return JSON.parse(localStorage.getItem(LOCKED_SECTIONS_KEY)) || [];
@@ -1574,6 +1659,7 @@ export default function App() {
     setTextOverrides(nextClass.textOverrides || {});
     setIntroOverrides(nextClass.introOverrides || []);
     setActivityOverrides(nextClass.activityOverrides || {});
+    setGameQuestions(nextClass.gameQuestions || teacherGameQuestions);
     setGameVisible(Boolean(nextClass.gameVisible));
     localStorage.setItem(ACTIVE_CLASS_KEY, nextClass.id);
   };
@@ -1601,6 +1687,7 @@ export default function App() {
       textOverrides: getTextOverrides(cloneMisaData()),
       introOverrides: celebrationIntro,
       activityOverrides: cardActivities,
+      gameQuestions: teacherGameQuestions,
       gameVisible: false,
       createdAt: serverTimestamp(),
       updatedAt: serverTimestamp(),
@@ -1629,7 +1716,8 @@ export default function App() {
     nextTextOverrides = textOverrides,
     nextIntroOverrides = introOverrides,
     nextActivityOverrides = activityOverrides,
-    nextGameVisible = gameVisible
+    nextGameVisible = gameVisible,
+    nextGameQuestions = gameQuestions
   ) => {
     if (!isFirebaseConfigured || !db || !activeClass) {
       if (isFirebaseConfigured) return;
@@ -1638,6 +1726,7 @@ export default function App() {
       localStorage.setItem(INTRO_OVERRIDES_KEY, JSON.stringify(nextIntroOverrides));
       localStorage.setItem(ACTIVITY_OVERRIDES_KEY, JSON.stringify(nextActivityOverrides));
       localStorage.setItem(GAME_VISIBLE_KEY, JSON.stringify(nextGameVisible));
+      localStorage.setItem(GAME_QUESTIONS_KEY, JSON.stringify(nextGameQuestions));
       return;
     }
     setIsSaving(true);
@@ -1648,6 +1737,7 @@ export default function App() {
         introOverrides: nextIntroOverrides,
         activityOverrides: nextActivityOverrides,
         gameVisible: nextGameVisible,
+        gameQuestions: nextGameQuestions,
         updatedAt: serverTimestamp(),
       }, { merge: true });
     } finally {
@@ -1694,7 +1784,12 @@ export default function App() {
   const toggleGameVisible = async () => {
     const nextGameVisible = !gameVisible;
     setGameVisible(nextGameVisible);
-    await saveClassState(lockedSections, textOverrides, introOverrides, activityOverrides, nextGameVisible);
+    await saveClassState(lockedSections, textOverrides, introOverrides, activityOverrides, nextGameVisible, gameQuestions);
+  };
+
+  const saveGameQuestions = async (nextGameQuestions) => {
+    setGameQuestions(nextGameQuestions);
+    await saveClassState(lockedSections, textOverrides, introOverrides, activityOverrides, gameVisible, nextGameQuestions);
   };
 
   return (
@@ -1722,6 +1817,7 @@ export default function App() {
           classes={classes}
           editableSections={editableSections}
           firebaseEnabled={isFirebaseConfigured}
+          gameQuestions={gameQuestions}
           gameVisible={gameVisible}
           introText={introText}
           isSaving={isSaving}
@@ -1732,6 +1828,7 @@ export default function App() {
           onLogout={logoutTeacher}
           onAddTeacherEmail={addTeacherEmail}
           onSaveActivities={saveActivities}
+          onSaveGameQuestions={saveGameQuestions}
           onSaveIntro={saveIntro}
           onSaveText={saveText}
           onSelectClass={selectClass}
@@ -1744,7 +1841,7 @@ export default function App() {
       ) : showStudentGame ? (
         <main className="teacher-page">
           <div className="teacher-page-shell">
-            <TeacherGame closeLabel="Volver" sections={editableSections} onClose={() => setShowStudentGame(false)} />
+            <TeacherGame closeLabel="Volver" onClose={() => setShowStudentGame(false)} questions={gameQuestions} />
           </div>
         </main>
       ) : showCover ? (
