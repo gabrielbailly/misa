@@ -147,7 +147,7 @@ const teacherGuide = [
   {
     title: 'Modo profesor',
     paragraphs: [
-      'El modo profesor permite preparar la experiencia de los alumnos: crear clases, generar enlaces específicos, bloquear o desbloquear bloques, editar textos y actividades, y añadir otros profesores autorizados si Firebase está configurado.',
+      'El modo profesor permite preparar la experiencia de los alumnos: crear clases, generar enlaces específicos, bloquear o desbloquear bloques, editar textos, imágenes y actividades, mostrar u ocultar el juego de clase, y añadir otros profesores autorizados si Firebase está configurado.',
       'Cuando Firebase está configurado, el profesor accede con Google y los cambios se guardan para la clase seleccionada. Si Firebase no está configurado, los cambios se guardan solo en este navegador.',
     ],
   },
@@ -163,6 +163,16 @@ const teacherGuide = [
     paragraphs: [
       'El profesor puede bloquear bloques completos para mostrar solo lo necesario en cada sesión, evitar que los alumnos avancen antes de tiempo o desbloquear todo al final como repaso.',
       'También puede adaptar el texto introductorio, el texto principal de cada tarjeta, el apartado Recuerda y las actividades de tipo Elige, Relaciona u Ordena.',
+      'En cada tarjeta se puede pulsar Editar imagen para ver la imagen actual, reemplazarla por otra subida desde el ordenador o eliminar la imagen subida. Al eliminar una imagen subida, vuelve a mostrarse la imagen original, que nunca se borra.',
+    ],
+  },
+  {
+    title: 'Juego de clase',
+    paragraphs: [
+      'El juego ¿Conoces lo que pasa en Misa? sirve para repasar oralmente los contenidos con toda la clase, proyectando una ruleta de alumnos y preguntas sencillas.',
+      'El profesor puede pegar la lista de alumnos. La aplicación elimina nombres repetidos y, cuando un alumno ya ha salido, no vuelve a aparecer en la ruleta.',
+      'Al girar la ruleta, queda visible el nombre del alumno y después aparece una pregunta en un modal. El profesor escucha la respuesta y marca Correcta, Regular o Incorrecta. Las respuestas correctas y regulares se guardan en dos listas visibles.',
+      'Desde Profesor se puede mostrar u ocultar el botón Juego para los alumnos. También se pueden editar, añadir, eliminar y ordenar las preguntas por Parte o Tema. Si una clase no tiene preguntas propias, puede usar las preguntas guardadas en otras clases del mismo profesor.',
     ],
   },
   {
@@ -172,7 +182,9 @@ const teacherGuide = [
       'Crear una clase distinta para cada grupo si se quieren configuraciones diferentes.',
       'Desbloquear solo los bloques necesarios para cada sesión.',
       'Revisar los textos editados antes de usarlos con alumnos.',
+      'Comprobar las imágenes personalizadas antes de compartir el enlace con la clase.',
       'Utilizar las actividades como comprobación rápida de comprensión.',
+      'Usar el juego al final de la sesión como repaso oral y participación de todos.',
       'Combinar el trabajo digital con diálogo en clase y explicación del profesor.',
     ],
   },
