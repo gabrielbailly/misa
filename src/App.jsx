@@ -41,6 +41,7 @@ const INTRO_OVERRIDES_KEY = 'misa-intro-overrides';
 const ACTIVITY_OVERRIDES_KEY = 'misa-activity-overrides';
 const GAME_VISIBLE_KEY = 'misa-game-visible';
 const GAME_QUESTIONS_KEY = 'misa-game-questions';
+const IMAGE_OVERRIDES_KEY = 'misa-image-overrides';
 const TEACHER_EMAILS = (import.meta.env.VITE_TEACHER_EMAILS || '')
   .split(',')
   .map((email) => email.trim().toLowerCase())
@@ -293,6 +294,14 @@ const applyActivityOverrides = (sections, activityOverrides = {}) => sections.ma
   })),
 }));
 
+const applyImageOverrides = (sections, imageOverrides = {}) => sections.map((section) => ({
+  ...section,
+  cards: section.cards.map((card) => ({
+    ...card,
+    ...(imageOverrides[card.title] ? { image: imageOverrides[card.title], imageLabels: undefined } : {}),
+  })),
+}));
+
 const getTextOverrides = (sections) => sections.reduce((overrides, section) => {
   section.cards.forEach((card) => {
     overrides[card.title] = { text: card.text, remember: card.remember };
@@ -301,6 +310,13 @@ const getTextOverrides = (sections) => sections.reduce((overrides, section) => {
 }, {});
 
 const getIntroText = (introOverrides) => introOverrides?.length ? introOverrides : celebrationIntro;
+
+const readImageAsDataUrl = (file) => new Promise((resolve, reject) => {
+  const reader = new FileReader();
+  reader.onload = () => resolve(reader.result);
+  reader.onerror = () => reject(reader.error);
+  reader.readAsDataURL(file);
+});
 
 const renderInlineFormatting = (text) => {
   const parts = String(text).split(/(\*\*[^*]+\*\*|\*[^*]+\*)/g);
@@ -515,6 +531,7 @@ const teacherGameQuestions = [
   { id: 'word-2', part: 'Liturgia de la Palabra', card: 'Evangelio', prompt: '¿Por qué escuchamos el Evangelio con atención?', answer: 'Porque en el Evangelio nos habla Jesús.' },
   { id: 'word-3', part: 'Liturgia de la Palabra', card: 'Homilía', prompt: '¿Para qué sirve la homilía?', answer: 'Para ayudarnos a entender la Palabra de Dios y vivirla.' },
   { id: 'word-4', part: 'Liturgia de la Palabra', card: 'Credo', prompt: '¿Qué decimos en el Credo?', answer: 'Decimos que creemos en Dios y proclamamos nuestra fe.' },
+  { id: 'word-7', part: 'Liturgia de la Palabra', card: 'Oración universal', prompt: '¿Por quién rezamos en la oración universal?', answer: 'Rezamos por la Iglesia, por el mundo y por las necesidades de todos.' },
   { id: 'word-5', part: 'Liturgia de la Palabra', card: 'Emaús', prompt: '¿Qué hizo Jesús con los discípulos de Emaús?', answer: 'Les explicó las Escrituras y partió para ellos el pan.' },
   { id: 'word-6', part: 'Liturgia de la Palabra', card: 'Domingo', prompt: '¿Por qué el domingo es el Día del Señor?', answer: 'Porque celebramos que Jesús resucitó y nos encontramos con Él en la Eucaristía.' },
   { id: 'eucharist-1', part: 'Liturgia Eucarística', card: 'Ofrendas', prompt: '¿Qué se presenta en las ofrendas?', answer: 'El pan y el vino.' },
@@ -832,6 +849,7 @@ function TeacherPage({
   editableSections,
   firebaseEnabled,
   gameQuestions,
+  imageOverrides,
   introText,
   isSaving,
   gameVisible,
@@ -843,6 +861,7 @@ function TeacherPage({
   onAddTeacherEmail,
   onSaveActivities,
   onSaveGameQuestions,
+  onSaveImage,
   onToggleGameVisible,
   onSaveIntro,
   onSaveText,
@@ -920,6 +939,17 @@ function TeacherPage({
       setEditingActivitiesCard(null);
     } catch (error) {
       setActionError(error.message || 'No se han podido guardar las actividades.');
+    }
+  };
+
+  const uploadImage = async (cardTitle, file) => {
+    if (!file) return;
+    setActionError('');
+    try {
+      const imageDataUrl = await readImageAsDataUrl(file);
+      await onSaveImage(cardTitle, imageDataUrl);
+    } catch (error) {
+      setActionError(error.message || 'No se ha podido subir la imagen.');
     }
   };
 
@@ -1091,6 +1121,11 @@ function TeacherPage({
                       <div className="teacher-edit-actions">
                         <button className="secondary-button" type="button" onClick={() => startEditing(card)} disabled={needsClass}>Editar texto</button>
                         <button className="secondary-button" type="button" onClick={() => startEditingActivities(card)} disabled={needsClass}>Editar actividades</button>
+                        <label className="secondary-button image-upload-button">
+                          Cambiar imagen
+                          <input accept="image/*" type="file" onChange={(event) => uploadImage(card.title, event.target.files?.[0])} disabled={needsClass} />
+                        </label>
+                        {imageOverrides[card.title] && <button className="secondary-button" type="button" onClick={() => onSaveImage(card.title, '')} disabled={needsClass}>Eliminar imagen subida</button>}
                       </div>
                     </div>
                   ))}
@@ -1574,6 +1609,13 @@ export default function App() {
       return {};
     }
   });
+  const [imageOverrides, setImageOverrides] = useState(() => {
+    try {
+      return JSON.parse(localStorage.getItem(IMAGE_OVERRIDES_KEY)) || {};
+    } catch {
+      return {};
+    }
+  });
   const [gameQuestions, setGameQuestions] = useState(() => {
     try {
       return JSON.parse(localStorage.getItem(GAME_QUESTIONS_KEY)) || teacherGameQuestions;
@@ -1589,7 +1631,7 @@ export default function App() {
     }
   });
   const [gameVisible, setGameVisible] = useState(() => localStorage.getItem(GAME_VISIBLE_KEY) === 'true');
-  const editableSections = applyActivityOverrides(applyTextOverrides(cloneMisaData(), textOverrides), activityOverrides);
+  const editableSections = applyImageOverrides(applyActivityOverrides(applyTextOverrides(cloneMisaData(), textOverrides), activityOverrides), imageOverrides);
   const introText = getIntroText(introOverrides);
   const canOpenTeacherPage = isFirebaseConfigured ? Boolean(teacher && teacherAllowed) : isLocalTeacher;
 
@@ -1726,6 +1768,7 @@ export default function App() {
     setTextOverrides(nextClass.textOverrides || {});
     setIntroOverrides(nextClass.introOverrides || []);
     setActivityOverrides(nextClass.activityOverrides || {});
+    setImageOverrides(nextClass.imageOverrides || {});
     setGameQuestions(nextGameQuestions || teacherGameQuestions);
     setGameVisible(Boolean(nextClass.gameVisible));
     localStorage.setItem(ACTIVE_CLASS_KEY, nextClass.id);
@@ -1754,6 +1797,7 @@ export default function App() {
       textOverrides: getTextOverrides(cloneMisaData()),
       introOverrides: celebrationIntro,
       activityOverrides: cardActivities,
+      imageOverrides: {},
       gameQuestions: teacherGameQuestions,
       gameVisible: false,
       createdAt: serverTimestamp(),
@@ -1783,6 +1827,7 @@ export default function App() {
     nextTextOverrides = textOverrides,
     nextIntroOverrides = introOverrides,
     nextActivityOverrides = activityOverrides,
+    nextImageOverrides = imageOverrides,
     nextGameVisible = gameVisible,
     nextGameQuestions = gameQuestions
   ) => {
@@ -1792,6 +1837,7 @@ export default function App() {
       localStorage.setItem(TEXT_OVERRIDES_KEY, JSON.stringify(nextTextOverrides));
       localStorage.setItem(INTRO_OVERRIDES_KEY, JSON.stringify(nextIntroOverrides));
       localStorage.setItem(ACTIVITY_OVERRIDES_KEY, JSON.stringify(nextActivityOverrides));
+      localStorage.setItem(IMAGE_OVERRIDES_KEY, JSON.stringify(nextImageOverrides));
       localStorage.setItem(GAME_VISIBLE_KEY, JSON.stringify(nextGameVisible));
       localStorage.setItem(GAME_QUESTIONS_KEY, JSON.stringify(nextGameQuestions));
       return;
@@ -1803,6 +1849,7 @@ export default function App() {
         textOverrides: nextTextOverrides,
         introOverrides: nextIntroOverrides,
         activityOverrides: nextActivityOverrides,
+        imageOverrides: nextImageOverrides,
         gameVisible: nextGameVisible,
         gameQuestions: nextGameQuestions,
         updatedAt: serverTimestamp(),
@@ -1848,15 +1895,23 @@ export default function App() {
     await saveClassState(lockedSections, textOverrides, introOverrides, nextActivityOverrides);
   };
 
+  const saveImage = async (cardTitle, nextImage) => {
+    const nextImageOverrides = nextImage
+      ? { ...imageOverrides, [cardTitle]: nextImage }
+      : Object.fromEntries(Object.entries(imageOverrides).filter(([title]) => title !== cardTitle));
+    setImageOverrides(nextImageOverrides);
+    await saveClassState(lockedSections, textOverrides, introOverrides, activityOverrides, nextImageOverrides);
+  };
+
   const toggleGameVisible = async () => {
     const nextGameVisible = !gameVisible;
     setGameVisible(nextGameVisible);
-    await saveClassState(lockedSections, textOverrides, introOverrides, activityOverrides, nextGameVisible, gameQuestions);
+    await saveClassState(lockedSections, textOverrides, introOverrides, activityOverrides, imageOverrides, nextGameVisible, gameQuestions);
   };
 
   const saveGameQuestions = async (nextGameQuestions) => {
     setGameQuestions(nextGameQuestions);
-    await saveClassState(lockedSections, textOverrides, introOverrides, activityOverrides, gameVisible, nextGameQuestions);
+    await saveClassState(lockedSections, textOverrides, introOverrides, activityOverrides, imageOverrides, gameVisible, nextGameQuestions);
   };
 
   return (
@@ -1886,6 +1941,7 @@ export default function App() {
           firebaseEnabled={isFirebaseConfigured}
           gameQuestions={gameQuestions}
           gameVisible={gameVisible}
+          imageOverrides={imageOverrides}
           introText={introText}
           isSaving={isSaving}
           lockedSections={lockedSections}
@@ -1896,6 +1952,7 @@ export default function App() {
           onAddTeacherEmail={addTeacherEmail}
           onSaveActivities={saveActivities}
           onSaveGameQuestions={saveGameQuestions}
+          onSaveImage={saveImage}
           onSaveIntro={saveIntro}
           onSaveText={saveText}
           onSelectClass={selectClass}
