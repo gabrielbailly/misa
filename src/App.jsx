@@ -876,6 +876,7 @@ function TeacherPage({
   const [editingText, setEditingText] = useState('');
   const [editingRemember, setEditingRemember] = useState('');
   const [editingIntro, setEditingIntro] = useState(null);
+  const [editingImageCard, setEditingImageCard] = useState(null);
   const [editingActivitiesCard, setEditingActivitiesCard] = useState(null);
   const [editingActivities, setEditingActivities] = useState([]);
   const [newTeacherEmail, setNewTeacherEmail] = useState('');
@@ -890,6 +891,12 @@ function TeacherPage({
   const introEditorRef = useRef(null);
   const needsClass = firebaseEnabled && !activeClass;
   const classLink = activeClass ? `${window.location.origin}${BASE_URL}?class=${activeClass.id}` : '';
+  const imageCard = editingImageCard
+    ? editableSections.flatMap((section) => section.cards).find((card) => card.title === editingImageCard)
+    : null;
+  const originalImage = editingImageCard
+    ? misaData.flatMap((section) => section.cards).find((card) => card.title === editingImageCard)?.image
+    : '';
 
   const handleCreateClass = async (event) => {
     event.preventDefault();
@@ -1121,11 +1128,7 @@ function TeacherPage({
                       <div className="teacher-edit-actions">
                         <button className="secondary-button" type="button" onClick={() => startEditing(card)} disabled={needsClass}>Editar texto</button>
                         <button className="secondary-button" type="button" onClick={() => startEditingActivities(card)} disabled={needsClass}>Editar actividades</button>
-                        <label className="secondary-button image-upload-button">
-                          Cambiar imagen
-                          <input accept="image/*" type="file" onChange={(event) => uploadImage(card.title, event.target.files?.[0])} disabled={needsClass} />
-                        </label>
-                        {imageOverrides[card.title] && <button className="secondary-button" type="button" onClick={() => onSaveImage(card.title, '')} disabled={needsClass}>Eliminar imagen subida</button>}
+                        <button className="secondary-button" type="button" onClick={() => setEditingImageCard(card.title)} disabled={needsClass}>Editar imagen</button>
                       </div>
                     </div>
                   ))}
@@ -1156,6 +1159,27 @@ function TeacherPage({
                 <div className="teacher-actions">
                   <button className="primary-button" type="button" onClick={saveIntro} disabled={isSaving}>{isSaving ? 'Guardando...' : 'Guardar texto'}</button>
                   <button className="secondary-button" type="button" onClick={() => setEditingIntro(null)}>Cancelar</button>
+                </div>
+              </div>
+            )}
+            {imageCard && (
+              <div className="modal-overlay" onClick={() => setEditingImageCard(null)}>
+                <div className="teacher-game-setup image-editor-modal" onClick={e => e.stopPropagation()}>
+                  <button className="modal-close" type="button" onClick={() => setEditingImageCard(null)}><X /></button>
+                  <p className="eyebrow">Editar imagen</p>
+                  <h3>{imageCard.title}</h3>
+                  <img className="image-editor-preview" src={imageCard.image || originalImage} alt={imageCard.title} />
+                  <div className="teacher-actions">
+                    <label className="primary-button image-upload-button">
+                      Reemplazar imagen
+                      <input accept="image/*" type="file" onChange={(event) => { uploadImage(imageCard.title, event.target.files?.[0]); event.target.value = ''; }} />
+                    </label>
+                    {imageOverrides[imageCard.title] ? (
+                      <button className="secondary-button" type="button" onClick={() => onSaveImage(imageCard.title, '')}>Eliminar imagen subida</button>
+                    ) : (
+                      <span className="original-image-note">Mostrando imagen original. La imagen original no se puede eliminar.</span>
+                    )}
+                  </div>
                 </div>
               </div>
             )}
