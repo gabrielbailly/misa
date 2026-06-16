@@ -559,6 +559,7 @@ function TeacherGame({ canEditQuestions = false, closeLabel = 'Volver a Profesor
   const [showStudentSetup, setShowStudentSetup] = useState(false);
   const [showQuestionEditor, setShowQuestionEditor] = useState(false);
   const [editingQuestionId, setEditingQuestionId] = useState('');
+  const [questionSort, setQuestionSort] = useState({ field: 'part', direction: 'asc' });
   const [questionDrafts, setQuestionDrafts] = useState(() => getTeacherGameQuestions(savedQuestions));
   const [selectedStudent, setSelectedStudent] = useState('');
   const [currentQuestion, setCurrentQuestion] = useState(null);
@@ -577,6 +578,10 @@ function TeacherGame({ canEditQuestions = false, closeLabel = 'Volver a Profesor
   const editingQuestion = questionDrafts.find((question) => question.id === editingQuestionId);
   const partOptions = [...new Set([...teacherGameQuestions, ...questionDrafts].map((question) => question.part).filter(Boolean))];
   const cardOptions = [...new Set([...teacherGameQuestions, ...questionDrafts].map((question) => question.card).filter(Boolean))];
+  const sortedQuestionDrafts = [...questionDrafts].sort((firstQuestion, secondQuestion) => {
+    const firstValue = (firstQuestion[questionSort.field] || '').localeCompare(secondQuestion[questionSort.field] || '', 'es', { sensitivity: 'base' });
+    return questionSort.direction === 'asc' ? firstValue : -firstValue;
+  });
 
   useEffect(() => {
     setQuestionDrafts(getTeacherGameQuestions(savedQuestions));
@@ -681,6 +686,13 @@ function TeacherGame({ canEditQuestions = false, closeLabel = 'Volver a Profesor
     setEditingQuestionId(newQuestion.id);
   };
 
+  const sortQuestionsBy = (field) => {
+    setQuestionSort((currentSort) => ({
+      field,
+      direction: currentSort.field === field && currentSort.direction === 'asc' ? 'desc' : 'asc',
+    }));
+  };
+
   return (
     <div className="teacher-game">
       <div className="teacher-game-header">
@@ -723,15 +735,15 @@ function TeacherGame({ canEditQuestions = false, closeLabel = 'Volver a Profesor
               <table className="question-editor-table">
                 <thead>
                   <tr>
-                    <th>Parte</th>
-                    <th>Tema</th>
+                    <th><button className="question-sort-button" type="button" onClick={() => sortQuestionsBy('part')}>Parte {questionSort.field === 'part' ? questionSort.direction === 'asc' ? '↑' : '↓' : ''}</button></th>
+                    <th><button className="question-sort-button" type="button" onClick={() => sortQuestionsBy('card')}>Tema {questionSort.field === 'card' ? questionSort.direction === 'asc' ? '↑' : '↓' : ''}</button></th>
                     <th>Pregunta</th>
                     <th>Respuesta orientativa</th>
                     <th>Eliminar</th>
                   </tr>
                 </thead>
                 <tbody>
-                  {questionDrafts.map((question) => (
+                  {sortedQuestionDrafts.map((question) => (
                     <tr key={question.id}>
                       <td>{question.part}</td>
                       <td>{question.card}</td>
