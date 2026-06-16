@@ -18,6 +18,7 @@ import {
   Send,
   Sparkles,
   Sun,
+  Trash2,
   Trophy,
   Users,
   Wine,
@@ -557,6 +558,7 @@ function TeacherGame({ canEditQuestions = false, closeLabel = 'Volver a Profesor
   const [studentText, setStudentText] = useState('');
   const [showStudentSetup, setShowStudentSetup] = useState(false);
   const [showQuestionEditor, setShowQuestionEditor] = useState(false);
+  const [editingQuestionId, setEditingQuestionId] = useState('');
   const [questionDrafts, setQuestionDrafts] = useState(() => getTeacherGameQuestions(savedQuestions));
   const [selectedStudent, setSelectedStudent] = useState('');
   const [currentQuestion, setCurrentQuestion] = useState(null);
@@ -572,6 +574,9 @@ function TeacherGame({ canEditQuestions = false, closeLabel = 'Volver a Profesor
   const questions = getTeacherGameQuestions(savedQuestions);
   const students = getUniqueNames(studentText);
   const availableStudents = students.filter((name) => !usedStudents.includes(name));
+  const editingQuestion = questionDrafts.find((question) => question.id === editingQuestionId);
+  const partOptions = [...new Set([...teacherGameQuestions, ...questionDrafts].map((question) => question.part).filter(Boolean))];
+  const cardOptions = [...new Set([...teacherGameQuestions, ...questionDrafts].map((question) => question.card).filter(Boolean))];
 
   useEffect(() => {
     setQuestionDrafts(getTeacherGameQuestions(savedQuestions));
@@ -665,16 +670,15 @@ function TeacherGame({ canEditQuestions = false, closeLabel = 'Volver a Profesor
   };
 
   const addQuestion = () => {
-    saveQuestionDrafts([
-      ...questionDrafts,
-      {
-        id: `custom-${Date.now()}`,
-        part: 'Juego',
-        card: 'Pregunta nueva',
-        prompt: 'Escribe aquí la pregunta.',
-        answer: 'Escribe aquí la respuesta orientativa.',
-      },
-    ]);
+    const newQuestion = {
+      id: `custom-${Date.now()}`,
+      part: partOptions[0] || 'Juego',
+      card: cardOptions[0] || 'Pregunta nueva',
+      prompt: 'Escribe aquí la pregunta.',
+      answer: 'Escribe aquí la respuesta orientativa.',
+    };
+    saveQuestionDrafts([...questionDrafts, newQuestion]);
+    setEditingQuestionId(newQuestion.id);
   };
 
   return (
@@ -715,17 +719,55 @@ function TeacherGame({ canEditQuestions = false, closeLabel = 'Volver a Profesor
                 <button className="primary-button" type="button" onClick={persistQuestionDrafts}>Guardar cambios</button>
               </div>
             </div>
-            <div className="question-editor-list">
-              {questionDrafts.map((question) => (
-                <div className="question-editor-card" key={question.id}>
-                  <input value={question.part} onChange={(event) => updateQuestion(question.id, 'part', event.target.value)} placeholder="Parte" />
-                  <input value={question.card} onChange={(event) => updateQuestion(question.id, 'card', event.target.value)} placeholder="Tema" />
-                  <textarea value={question.prompt} onChange={(event) => updateQuestion(question.id, 'prompt', event.target.value)} placeholder="Pregunta" rows="2" />
-                  <textarea value={question.answer} onChange={(event) => updateQuestion(question.id, 'answer', event.target.value)} placeholder="Respuesta orientativa" rows="2" />
-                  <button className="secondary-button wrong" type="button" onClick={() => deleteQuestion(question.id)}>Eliminar</button>
-                </div>
-              ))}
+            <div className="question-table-wrap">
+              <table className="question-editor-table">
+                <thead>
+                  <tr>
+                    <th>Parte</th>
+                    <th>Tema</th>
+                    <th>Pregunta</th>
+                    <th>Respuesta orientativa</th>
+                    <th>Eliminar</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {questionDrafts.map((question) => (
+                    <tr key={question.id}>
+                      <td>{question.part}</td>
+                      <td>{question.card}</td>
+                      <td>
+                        <button className="question-row-button" type="button" onClick={() => setEditingQuestionId(question.id)}>{question.prompt}</button>
+                      </td>
+                      <td>{question.answer}</td>
+                      <td>
+                        <button className="trash-button" type="button" onClick={() => deleteQuestion(question.id)} aria-label="Eliminar pregunta"><Trash2 size={18} /></button>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
             </div>
+          </section>
+        </div>
+      )}
+      {editingQuestion && (
+        <div className="modal-overlay" onClick={() => setEditingQuestionId('')}>
+          <section className="teacher-game-setup question-edit-modal" onClick={e => e.stopPropagation()}>
+            <button className="modal-close" type="button" onClick={() => setEditingQuestionId('')}><X /></button>
+            <p className="eyebrow">Editar pregunta</p>
+            <label htmlFor="question-part">Parte</label>
+            <select id="question-part" value={editingQuestion.part} onChange={(event) => updateQuestion(editingQuestion.id, 'part', event.target.value)}>
+              {partOptions.map((option) => <option key={option} value={option}>{option}</option>)}
+            </select>
+            <label htmlFor="question-card">Tema</label>
+            <select id="question-card" value={editingQuestion.card} onChange={(event) => updateQuestion(editingQuestion.id, 'card', event.target.value)}>
+              {cardOptions.map((option) => <option key={option} value={option}>{option}</option>)}
+            </select>
+            <label htmlFor="question-prompt">Pregunta</label>
+            <textarea id="question-prompt" value={editingQuestion.prompt} onChange={(event) => updateQuestion(editingQuestion.id, 'prompt', event.target.value)} rows="3" autoFocus />
+            <label htmlFor="question-answer">Respuesta orientativa</label>
+            <textarea id="question-answer" value={editingQuestion.answer} onChange={(event) => updateQuestion(editingQuestion.id, 'answer', event.target.value)} rows="3" />
+            <button className="primary-button" type="button" onClick={() => setEditingQuestionId('')}>Aceptar</button>
           </section>
         </div>
       )}
