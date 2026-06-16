@@ -1170,7 +1170,7 @@ function TeacherPage({
                   <h3>{imageCard.title}</h3>
                   <img className="image-editor-preview" src={imageCard.image || originalImage} alt={imageCard.title} />
                   <div className="teacher-actions">
-                    <label className="primary-button image-upload-button">
+                    <label className="secondary-button image-upload-button">
                       Reemplazar imagen
                       <input accept="image/*" type="file" onChange={(event) => { uploadImage(imageCard.title, event.target.files?.[0]); event.target.value = ''; }} />
                     </label>
