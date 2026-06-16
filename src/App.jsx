@@ -1654,12 +1654,25 @@ export default function App() {
     if (!classDoc) return;
     const freshDoc = db ? await getDoc(doc(db, 'classes', classId)) : null;
     const nextClass = freshDoc?.exists() ? { id: freshDoc.id, ...freshDoc.data() } : classDoc;
+    let nextGameQuestions = nextClass.gameQuestions;
+    if (!nextGameQuestions?.length) {
+      const classWithQuestions = availableClasses.find((classItem) => classItem.id !== nextClass.id && classItem.gameQuestions?.length);
+      nextGameQuestions = classWithQuestions?.gameQuestions;
+    }
+    if (!nextGameQuestions?.length && db && nextClass.ownerUid) {
+      const classesQuery = query(collection(db, 'classes'), where('ownerUid', '==', nextClass.ownerUid));
+      const snapshot = await getDocs(classesQuery);
+      const classWithQuestions = snapshot.docs
+        .map((classSnapshot) => ({ id: classSnapshot.id, ...classSnapshot.data() }))
+        .find((classItem) => classItem.id !== nextClass.id && classItem.gameQuestions?.length);
+      nextGameQuestions = classWithQuestions?.gameQuestions;
+    }
     setActiveClass(nextClass);
     setLockedSections(nextClass.lockedSections || []);
     setTextOverrides(nextClass.textOverrides || {});
     setIntroOverrides(nextClass.introOverrides || []);
     setActivityOverrides(nextClass.activityOverrides || {});
-    setGameQuestions(nextClass.gameQuestions || teacherGameQuestions);
+    setGameQuestions(nextGameQuestions || teacherGameQuestions);
     setGameVisible(Boolean(nextClass.gameVisible));
     localStorage.setItem(ACTIVE_CLASS_KEY, nextClass.id);
   };
