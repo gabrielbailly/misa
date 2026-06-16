@@ -545,10 +545,12 @@ function TeacherGame({ closeLabel = 'Volver a Profesor', sections, onClose }) {
   const [selectedStudent, setSelectedStudent] = useState('');
   const [currentQuestion, setCurrentQuestion] = useState(null);
   const [isSpinning, setIsSpinning] = useState(false);
+  const [isQuestionPending, setIsQuestionPending] = useState(false);
   const [usedStudents, setUsedStudents] = useState([]);
   const [correctStudents, setCorrectStudents] = useState([]);
   const [regularStudents, setRegularStudents] = useState([]);
   const spinTimeoutRef = useRef(null);
+  const questionTimeoutRef = useRef(null);
   const soundIntervalRef = useRef(null);
   const audioContextRef = useRef(null);
   const questions = getTeacherGameQuestions(sections);
@@ -560,6 +562,7 @@ function TeacherGame({ closeLabel = 'Volver a Profesor', sections, onClose }) {
 
   useEffect(() => () => {
     window.clearTimeout(spinTimeoutRef.current);
+    window.clearTimeout(questionTimeoutRef.current);
     window.clearInterval(soundIntervalRef.current);
     audioContextRef.current?.close();
   }, []);
@@ -592,8 +595,9 @@ function TeacherGame({ closeLabel = 'Volver a Profesor', sections, onClose }) {
   };
 
   const spinStudent = () => {
-    if (!availableStudents.length || !questions.length || isSpinning || currentQuestion) return;
+    if (!availableStudents.length || !questions.length || isSpinning || isQuestionPending || currentQuestion) return;
     setIsSpinning(true);
+    setIsQuestionPending(false);
     setCurrentQuestion(null);
     startSpinSound();
     const startedAt = Date.now();
@@ -608,7 +612,11 @@ function TeacherGame({ closeLabel = 'Volver a Profesor', sections, onClose }) {
       setIsSpinning(false);
       setSelectedStudent(nextStudent);
       setUsedStudents((names) => addUniqueName(names, nextStudent));
-      setCurrentQuestion(questions[Math.floor(Math.random() * questions.length)]);
+      setIsQuestionPending(true);
+      questionTimeoutRef.current = window.setTimeout(() => {
+        setCurrentQuestion(questions[Math.floor(Math.random() * questions.length)]);
+        setIsQuestionPending(false);
+      }, 2000);
     };
     spin();
   };
@@ -618,6 +626,7 @@ function TeacherGame({ closeLabel = 'Volver a Profesor', sections, onClose }) {
     if (grade === 'correct') setCorrectStudents((names) => addUniqueName(names, selectedStudent));
     if (grade === 'regular') setRegularStudents((names) => addUniqueName(names, selectedStudent));
     setCurrentQuestion(null);
+    setIsQuestionPending(false);
     setSelectedStudent('');
   };
 
@@ -648,8 +657,8 @@ function TeacherGame({ closeLabel = 'Volver a Profesor', sections, onClose }) {
         <section className="teacher-game-stage">
           <p className="game-empty">{students.length ? `${students.length} alumnos cargados. ${availableStudents.length} quedan por salir.` : 'Pulsa Lista de alumnos para pegar los nombres.'}</p>
           <div className={isSpinning ? 'roulette-name spinning' : 'roulette-name'}>{selectedStudent || 'Pulsa la ruleta'}</div>
-          <button className="primary-button spin-button" type="button" onClick={spinStudent} disabled={!availableStudents.length || !questions.length || isSpinning || Boolean(currentQuestion)}>
-            {isSpinning ? 'Girando...' : availableStudents.length ? 'Girar ruleta' : 'Ya han salido todos'}
+          <button className="primary-button spin-button" type="button" onClick={spinStudent} disabled={!availableStudents.length || !questions.length || isSpinning || isQuestionPending || Boolean(currentQuestion)}>
+            {isSpinning ? 'Girando...' : isQuestionPending ? 'Preparando pregunta...' : availableStudents.length ? 'Girar ruleta' : 'Ya han salido todos'}
           </button>
           <p className="game-empty">Al detenerse la ruleta aparecerá una pregunta en el centro de la pantalla.</p>
         </section>
