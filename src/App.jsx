@@ -756,6 +756,12 @@ function TeacherGame({ canEditQuestions = false, closeLabel = 'Volver a Profesor
     window.clearTimeout(botAnswerTimeoutRef.current);
     botAnswerTimeoutRef.current = window.setTimeout(() => {
       setBotAnswerRevealed(true);
+      window.setTimeout(() => {
+        const grade = isCorrect ? 'correct' : 'regular';
+        setBotScore((prev) => ({ ...prev, [grade === 'correct' ? 'correct' : 'regular']: prev[grade === 'correct' ? 'correct' : 'regular'] + 1 }));
+        setCurrentQuestion(null);
+        setCurrentModePlayer('_human');
+      }, 1500);
     }, 2500);
   };
 
@@ -1122,16 +1128,9 @@ function TeacherGame({ canEditQuestions = false, closeLabel = 'Volver a Profesor
               </details>
             )}
             {botAnswerRevealed ? (
-              <>
-                <div className="bot-answer-box">
-                  <strong>Respuesta del bot:</strong> {botAnswerText}
-                </div>
-                <div className="game-grade-actions">
-                  <button className="primary-button correct" type="button" onClick={() => gradeAnswer('correct')}>Correcta</button>
-                  <button className="secondary-button regular" type="button" onClick={() => gradeAnswer('regular')}>Regular</button>
-                  <button className="secondary-button wrong" type="button" onClick={() => gradeAnswer('wrong')}>Incorrecta</button>
-                </div>
-              </>
+              <div className="bot-answer-box">
+                <strong>Respuesta del bot:</strong> {botAnswerText}
+              </div>
             ) : (
               <div className="bot-thinking">
                 <p>El bot está pensando...</p>
