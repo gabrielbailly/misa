@@ -604,6 +604,7 @@ function TeacherGame({ canEditQuestions = false, closeLabel = 'Volver a Profesor
   const [botScore, setBotScore] = useState({ correct: 0, regular: 0 });
   const [botAnswerRevealed, setBotAnswerRevealed] = useState(false);
   const [botAnswerText, setBotAnswerText] = useState('');
+  const [botAnswerResult, setBotAnswerResult] = useState(null);
   const [currentModePlayer, setCurrentModePlayer] = useState('');
   const [gameStarted, setGameStarted] = useState(false);
   const spinTimeoutRef = useRef(null);
@@ -632,6 +633,26 @@ function TeacherGame({ canEditQuestions = false, closeLabel = 'Volver a Profesor
     setStudentText(savedStudentList?.join('\n') || '');
   }, [savedStudentList]);
 
+  useEffect(() => {
+    if (gameMode !== 'bot' || currentModePlayer !== '_bot' || !currentQuestion) return;
+    if (botAnswerRevealed) return;
+    if (!botAnswerResult) return;
+    const tid = setTimeout(() => setBotAnswerRevealed(true), 2500);
+    return () => clearTimeout(tid);
+  }, [gameMode, currentModePlayer, currentQuestion, botAnswerRevealed, botAnswerResult]);
+
+  useEffect(() => {
+    if (gameMode !== 'bot' || currentModePlayer !== '_bot' || !currentQuestion || !botAnswerRevealed || !botAnswerResult) return;
+    const tid = setTimeout(() => {
+      setBotScore((prev) => ({ ...prev, [botAnswerResult]: (prev[botAnswerResult] || 0) + 1 }));
+      setCurrentQuestion(null);
+      setCurrentModePlayer('_human');
+      setBotAnswerRevealed(false);
+      setBotAnswerResult(null);
+    }, 2000);
+    return () => clearTimeout(tid);
+  }, [gameMode, currentModePlayer, currentQuestion, botAnswerRevealed, botAnswerResult]);
+
   useEffect(() => () => {
     window.clearTimeout(spinTimeoutRef.current);
     window.clearTimeout(questionTimeoutRef.current);
@@ -650,6 +671,7 @@ function TeacherGame({ canEditQuestions = false, closeLabel = 'Volver a Profesor
     setBotScore({ correct: 0, regular: 0 });
     setBotAnswerRevealed(false);
     setBotAnswerText('');
+    setBotAnswerResult(null);
     setSelectedStudent('');
     setCurrentQuestion(null);
     setIsSpinning(false);
@@ -747,23 +769,14 @@ function TeacherGame({ canEditQuestions = false, closeLabel = 'Volver a Profesor
     setUsedQuestions((ids) => addUniqueName(ids, nextQuestion.id));
     setCurrentModePlayer('_bot');
     setBotAnswerRevealed(false);
+    setBotAnswerResult(null);
     const isCorrect = Math.random() < 0.6;
     const words = nextQuestion.answer.split(' ');
     const answerText = isCorrect
       ? nextQuestion.answer
       : words.slice(0, Math.max(1, Math.ceil(words.length * 0.45))).join(' ') + '...';
     setBotAnswerText(answerText);
-    window.clearTimeout(botAnswerTimeoutRef.current);
-    botAnswerTimeoutRef.current = setTimeout(step2, 2500);
-    function step2() {
-      setBotAnswerRevealed(true);
-      botAnswerTimeoutRef.current = setTimeout(step3, 2000);
-    }
-    function step3() {
-      setBotScore((prev) => ({ ...prev, [isCorrect ? 'correct' : 'regular']: (prev[isCorrect ? 'correct' : 'regular'] || 0) + 1 }));
-      setCurrentQuestion(null);
-      setCurrentModePlayer('_human');
-    }
+    setBotAnswerResult(isCorrect ? 'correct' : 'regular');
   };
 
   const advanceToNextPlayer = () => {
