@@ -602,10 +602,13 @@ function TeacherGame({ canEditQuestions = false, closeLabel = 'Volver a Profesor
   const [usedQuestions, setUsedQuestions] = useState([]);
   const [playerScores, setPlayerScores] = useState({});
   const [botScore, setBotScore] = useState({ correct: 0, regular: 0 });
+  const [botAnswerRevealed, setBotAnswerRevealed] = useState(false);
+  const [botAnswerText, setBotAnswerText] = useState('');
   const [currentModePlayer, setCurrentModePlayer] = useState('');
   const [gameStarted, setGameStarted] = useState(false);
   const spinTimeoutRef = useRef(null);
   const questionTimeoutRef = useRef(null);
+  const botAnswerTimeoutRef = useRef(null);
   const soundIntervalRef = useRef(null);
   const audioContextRef = useRef(null);
   const questions = getTeacherGameQuestions(savedQuestions);
@@ -632,6 +635,7 @@ function TeacherGame({ canEditQuestions = false, closeLabel = 'Volver a Profesor
   useEffect(() => () => {
     window.clearTimeout(spinTimeoutRef.current);
     window.clearTimeout(questionTimeoutRef.current);
+    window.clearTimeout(botAnswerTimeoutRef.current);
     window.clearInterval(soundIntervalRef.current);
     audioContextRef.current?.close();
   }, []);
@@ -644,11 +648,14 @@ function TeacherGame({ canEditQuestions = false, closeLabel = 'Volver a Profesor
     setUsedQuestions([]);
     setPlayerScores({});
     setBotScore({ correct: 0, regular: 0 });
+    setBotAnswerRevealed(false);
+    setBotAnswerText('');
     setSelectedStudent('');
     setCurrentQuestion(null);
     setIsSpinning(false);
     setIsQuestionPending(false);
     setCurrentModePlayer('');
+    window.clearTimeout(botAnswerTimeoutRef.current);
   };
 
   const changeGameMode = (mode) => {
@@ -733,6 +740,25 @@ function TeacherGame({ canEditQuestions = false, closeLabel = 'Volver a Profesor
     setCurrentModePlayer(playerName);
   };
 
+  const askBotQuestion = () => {
+    const nextQuestion = availableQuestions[Math.floor(Math.random() * availableQuestions.length)];
+    if (!nextQuestion) return;
+    setCurrentQuestion(nextQuestion);
+    setUsedQuestions((ids) => addUniqueName(ids, nextQuestion.id));
+    setCurrentModePlayer('_bot');
+    setBotAnswerRevealed(false);
+    const isCorrect = Math.random() < 0.6;
+    const words = nextQuestion.answer.split(' ');
+    const answerText = isCorrect
+      ? nextQuestion.answer
+      : words.slice(0, Math.max(1, Math.ceil(words.length * 0.45))).join(' ') + '...';
+    setBotAnswerText(answerText);
+    window.clearTimeout(botAnswerTimeoutRef.current);
+    botAnswerTimeoutRef.current = window.setTimeout(() => {
+      setBotAnswerRevealed(true);
+    }, 2500);
+  };
+
   const advanceToNextPlayer = () => {
     if (gameMode === 'friends') {
       if (!students.length) return;
@@ -771,13 +797,6 @@ function TeacherGame({ canEditQuestions = false, closeLabel = 'Volver a Profesor
       setCurrentQuestion(null);
       advanceToNextPlayer();
     }
-  };
-
-  const botAutoAnswer = () => {
-    const grade = Math.random() < 0.6 ? 'correct' : 'regular';
-    setBotScore((prev) => ({ ...prev, [grade === 'correct' ? 'correct' : 'regular']: prev[grade === 'correct' ? 'correct' : 'regular'] + 1 }));
-    setCurrentQuestion(null);
-    setCurrentModePlayer('_human');
   };
 
   const saveStudentList = () => {
@@ -854,7 +873,7 @@ function TeacherGame({ canEditQuestions = false, closeLabel = 'Volver a Profesor
         )}
       </div>
       <div className="teacher-game-setup-bar">
-        {gameMode === 'class' && (
+        {gameMode === 'class' && !isStudent && (
           <>
             <button className="secondary-button" type="button" onClick={() => setShowStudentSetup(true)}>Lista de alumnos {students.length ? `(${students.length})` : ''}</button>
             {students.length > 0 && !gameStarted && <button className="primary-button" type="button" onClick={startGame}>Empezar a jugar</button>}
@@ -1022,10 +1041,7 @@ function TeacherGame({ canEditQuestions = false, closeLabel = 'Volver a Profesor
                 <p className="game-empty">Turno de: <strong>{currentModePlayer === '_bot' ? 'Bot' : 'Jugador'}</strong></p>
                 <button className="primary-button" type="button" onClick={() => {
                   if (currentModePlayer === '_bot') {
-                    const nextQuestion = availableQuestions[Math.floor(Math.random() * availableQuestions.length)];
-                    if (!nextQuestion) return;
-                    setCurrentQuestion(nextQuestion);
-                    setUsedQuestions((ids) => addUniqueName(ids, nextQuestion.id));
+                    askBotQuestion();
                   } else {
                     askQuestionForPlayer('_human');
                   }
@@ -1057,10 +1073,7 @@ function TeacherGame({ canEditQuestions = false, closeLabel = 'Volver a Profesor
         </div>
       )}
       {currentQuestion && gameMode === 'friends' && (
-        <div className="modal-overlay game-question-overlay" onClick={() => {
-          if (currentModePlayer !== '_bot') return;
-          botAutoAnswer();
-        }}>
+        <div className="modal-overlay game-question-overlay">
           <div className="game-question-card game-question-modal" onClick={e => e.stopPropagation()}>
             <p className="eyebrow">{currentModePlayer} · {currentQuestion.part} · {currentQuestion.card}</p>
             <h4>{currentQuestion.prompt}</h4>
@@ -1108,9 +1121,22 @@ function TeacherGame({ canEditQuestions = false, closeLabel = 'Volver a Profesor
                 <p>{currentQuestion.answer}</p>
               </details>
             )}
-            <div className="game-grade-actions">
-              <button className="primary-button correct" type="button" onClick={botAutoAnswer}>El bot responde</button>
-            </div>
+            {botAnswerRevealed ? (
+              <>
+                <div className="bot-answer-box">
+                  <strong>Respuesta del bot:</strong> {botAnswerText}
+                </div>
+                <div className="game-grade-actions">
+                  <button className="primary-button correct" type="button" onClick={() => gradeAnswer('correct')}>Correcta</button>
+                  <button className="secondary-button regular" type="button" onClick={() => gradeAnswer('regular')}>Regular</button>
+                  <button className="secondary-button wrong" type="button" onClick={() => gradeAnswer('wrong')}>Incorrecta</button>
+                </div>
+              </>
+            ) : (
+              <div className="bot-thinking">
+                <p>El bot está pensando...</p>
+              </div>
+            )}
           </div>
         </div>
       )}
