@@ -170,10 +170,17 @@ const teacherGuide = [
   {
     title: 'Juego de clase',
     paragraphs: [
-      'El juego ¿Conoces lo que pasa en Misa? sirve para repasar oralmente los contenidos con toda la clase, proyectando una ruleta de alumnos y preguntas sencillas.',
-      'El profesor puede pegar la lista de alumnos. La aplicación elimina nombres repetidos y, cuando un alumno ya ha salido, no vuelve a aparecer en la ruleta.',
-      'Al girar la ruleta, queda visible el nombre del alumno y después aparece una pregunta en un modal. El profesor escucha la respuesta y marca Correcta, Regular o Incorrecta. Las respuestas correctas y regulares se guardan en dos listas visibles.',
-      'Desde Profesor se puede mostrar u ocultar el botón Juego para los alumnos. También se pueden editar, añadir, eliminar y ordenar las preguntas por Parte o Tema. Si una clase no tiene preguntas propias, puede usar las preguntas guardadas en otras clases del mismo profesor.',
+      'El juego ¿Conoces lo que pasa en Misa? ofrece tres modos para repasar oralmente los contenidos de la Eucaristía. En todos los modos la aplicación evita repetir preguntas dentro de una misma partida.',
+      'En clase: se proyecta una ruleta con los nombres de los alumnos. Al girar la ruleta, el nombre seleccionado queda visible y aparece una pregunta en un modal. El profesor escucha la respuesta y marca Correcta, Regular o Incorrecta. Los aciertos y regulares se guardan en listas visibles. Los alumnos ya seleccionados no vuelven a salir.',
+      'Con amigos: los jugadores aparecen como tarjetas con su puntuación. En cada turno se muestra quién debe responder ("Turno de...") y, al calificar la respuesta, se avanza automáticamente al siguiente jugador. Cada jugador acumula su propio marcador de Correctas y Regulares.',
+      'Contra el bot: los turnos alternan automáticamente entre el jugador humano y el bot. Cuando es el turno del bot, se muestra "pensando..." durante 2.5 segundos, después se revela la respuesta completa con la etiqueta Correcta o Regular, y tras 4 segundos se cierra el modal y pasa al jugador humano.',
+    ],
+    items: [
+      'El profesor puede pegar la lista de alumnos. La aplicación elimina nombres repetidos y la lista se guarda por clase.',
+      'Los modos "Con amigos" y "Contra el bot" están disponibles también para los alumnos desde su pantalla. El modo "En clase" solo lo ve el profesor.',
+      'Desde el panel de profesor se puede mostrar u ocultar el botón Juego para los alumnos.',
+      'Se pueden editar, añadir, eliminar y ordenar las preguntas por Parte o Tema. Si una clase no tiene preguntas propias, puede usar las preguntas de otras clases del mismo profesor.',
+      'El botón "Reiniciar juego" borra las puntuaciones y la lista de preguntas usadas, permitiendo empezar una nueva partida.',
     ],
   },
   {
