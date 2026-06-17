@@ -771,11 +771,7 @@ function TeacherGame({ canEditQuestions = false, closeLabel = 'Volver a Profesor
     setBotAnswerRevealed(false);
     setBotAnswerResult(null);
     const isCorrect = Math.random() < 0.6;
-    const words = nextQuestion.answer.split(' ');
-    const answerText = isCorrect
-      ? nextQuestion.answer
-      : words.slice(0, Math.max(1, Math.ceil(words.length * 0.45))).join(' ') + '...';
-    setBotAnswerText(answerText);
+    setBotAnswerText(nextQuestion.answer);
     setBotAnswerResult(isCorrect ? 'correct' : 'regular');
   };
 
@@ -1143,6 +1139,9 @@ function TeacherGame({ canEditQuestions = false, closeLabel = 'Volver a Profesor
             )}
             {botAnswerRevealed ? (
               <div className="bot-answer-box">
+                <span className={`bot-grade ${botAnswerResult}`}>
+                  {botAnswerResult === 'correct' ? 'Correcta' : 'Regular'}
+                </span>
                 <strong>Respuesta del bot:</strong> {botAnswerText}
               </div>
             ) : (
