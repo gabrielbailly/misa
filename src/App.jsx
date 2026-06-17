@@ -603,6 +603,7 @@ function TeacherGame({ canEditQuestions = false, closeLabel = 'Volver a Profesor
   const [playerScores, setPlayerScores] = useState({});
   const [botScore, setBotScore] = useState({ correct: 0, regular: 0 });
   const [currentModePlayer, setCurrentModePlayer] = useState('');
+  const [gameStarted, setGameStarted] = useState(false);
   const spinTimeoutRef = useRef(null);
   const questionTimeoutRef = useRef(null);
   const soundIntervalRef = useRef(null);
@@ -628,12 +629,6 @@ function TeacherGame({ canEditQuestions = false, closeLabel = 'Volver a Profesor
     setStudentText(savedStudentList?.join('\n') || '');
   }, [savedStudentList]);
 
-  useEffect(() => {
-    if (gameMode === 'friends' && students.length > 0 && !currentModePlayer && !currentQuestion && !allQuestionsUsed) {
-      setCurrentModePlayer(students[0]);
-    }
-  }, [students, gameMode, currentModePlayer, currentQuestion, allQuestionsUsed]);
-
   useEffect(() => () => {
     window.clearTimeout(spinTimeoutRef.current);
     window.clearTimeout(questionTimeoutRef.current);
@@ -642,6 +637,7 @@ function TeacherGame({ canEditQuestions = false, closeLabel = 'Volver a Profesor
   }, []);
 
   const resetGameState = () => {
+    setGameStarted(false);
     setUsedStudents([]);
     setCorrectStudents([]);
     setRegularStudents([]);
@@ -658,9 +654,13 @@ function TeacherGame({ canEditQuestions = false, closeLabel = 'Volver a Profesor
   const changeGameMode = (mode) => {
     setGameMode(mode);
     resetGameState();
-    if (mode === 'friends' && students.length > 0) {
+  };
+
+  const startGame = () => {
+    setGameStarted(true);
+    if (gameMode === 'friends' && students.length > 0) {
       setCurrentModePlayer(students[0]);
-    } else if (mode === 'bot') {
+    } else if (gameMode === 'bot') {
       setCurrentModePlayer('_human');
     }
   };
@@ -835,20 +835,38 @@ function TeacherGame({ canEditQuestions = false, closeLabel = 'Volver a Profesor
           <button className="secondary-button" type="button" onClick={onClose}>{closeLabel}</button>
         </div>
       </div>
-      <div className="game-mode-selector">
+      <div className="game-mode-bar">
+        <span className="game-mode-label">Modo de juego:</span>
         {!isStudent && <button className={gameMode === 'class' ? 'game-mode-btn active' : 'game-mode-btn'} type="button" onClick={() => changeGameMode('class')}>En clase</button>}
         <button className={gameMode === 'friends' ? 'game-mode-btn active' : 'game-mode-btn'} type="button" onClick={() => changeGameMode('friends')}>Con amigos</button>
         <button className={gameMode === 'bot' ? 'game-mode-btn active' : 'game-mode-btn'} type="button" onClick={() => changeGameMode('bot')}>Contra el bot</button>
+        {gameMode !== 'class' && (
+          <button className="student-list-btn" type="button" onClick={() => setShowStudentSetup(true)}>
+            Lista de jugadores{students.length ? ` (${students.length})` : ''}
+          </button>
+        )}
+        {gameMode !== 'class' && students.length > 0 && !gameStarted && !allQuestionsUsed && (
+          <button className="primary-button" type="button" onClick={startGame}>Empezar a jugar</button>
+        )}
       </div>
       <div className="teacher-game-setup-bar">
-        <button className="secondary-button" type="button" onClick={() => setShowStudentSetup(true)}>Lista de alumnos {students.length ? `(${students.length})` : ''}</button>
-        {!allQuestionsUsed && availableQuestions.length < questions.length && (
-          <span className="game-used-count">{usedQuestions.length} de {questions.length} preguntas usadas</span>
+        {gameMode === 'class' && (
+          <>
+            <button className="secondary-button" type="button" onClick={() => setShowStudentSetup(true)}>Lista de alumnos {students.length ? `(${students.length})` : ''}</button>
+            {students.length > 0 && !gameStarted && <button className="primary-button" type="button" onClick={startGame}>Empezar a jugar</button>}
+          </>
         )}
-        {allQuestionsUsed && (
-          <span className="game-all-used">Todas las preguntas usadas</span>
+        {gameStarted && (
+          <>
+            {!allQuestionsUsed && availableQuestions.length < questions.length && (
+              <span className="game-used-count">{usedQuestions.length} de {questions.length} preguntas usadas</span>
+            )}
+            {allQuestionsUsed && (
+              <span className="game-all-used">Todas las preguntas usadas</span>
+            )}
+            <button className="secondary-button" type="button" onClick={resetGameState}>Reiniciar juego</button>
+          </>
         )}
-        <button className="secondary-button" type="button" onClick={resetGameState}>Reiniciar juego</button>
       </div>
       {showStudentSetup && (
         <div className="modal-overlay" onClick={() => setShowStudentSetup(false)}>
@@ -927,7 +945,7 @@ function TeacherGame({ canEditQuestions = false, closeLabel = 'Volver a Profesor
           </section>
         </div>
       )}
-      {gameMode === 'class' && (
+      {gameMode === 'class' && gameStarted && (
         <div className="teacher-game-grid">
           <section className="teacher-game-stage">
             {!students.length && <p className="game-empty">Pulsa Lista de alumnos para pegar los nombres.</p>}
@@ -956,7 +974,7 @@ function TeacherGame({ canEditQuestions = false, closeLabel = 'Volver a Profesor
           </div>
         </div>
       )}
-      {gameMode === 'friends' && (
+      {gameMode === 'friends' && gameStarted && (
         <div className="teacher-game-grid">
           <section className="teacher-game-stage">
             {!students.length && <p className="game-empty">Añade alumnos desde Lista de alumnos.</p>}
@@ -990,7 +1008,7 @@ function TeacherGame({ canEditQuestions = false, closeLabel = 'Volver a Profesor
           </div>
         </div>
       )}
-      {gameMode === 'bot' && (
+      {gameMode === 'bot' && gameStarted && (
         <div className="teacher-game-grid">
           <section className="teacher-game-stage">
             {!students.length && <p className="game-empty">Añade alumnos desde Lista de alumnos.</p>}
