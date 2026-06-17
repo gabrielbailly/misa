@@ -754,15 +754,16 @@ function TeacherGame({ canEditQuestions = false, closeLabel = 'Volver a Profesor
       : words.slice(0, Math.max(1, Math.ceil(words.length * 0.45))).join(' ') + '...';
     setBotAnswerText(answerText);
     window.clearTimeout(botAnswerTimeoutRef.current);
-    botAnswerTimeoutRef.current = window.setTimeout(() => {
+    botAnswerTimeoutRef.current = setTimeout(step2, 2500);
+    function step2() {
       setBotAnswerRevealed(true);
-      window.setTimeout(() => {
-        const grade = isCorrect ? 'correct' : 'regular';
-        setBotScore((prev) => ({ ...prev, [grade === 'correct' ? 'correct' : 'regular']: prev[grade === 'correct' ? 'correct' : 'regular'] + 1 }));
-        setCurrentQuestion(null);
-        setCurrentModePlayer('_human');
-      }, 1500);
-    }, 2500);
+      botAnswerTimeoutRef.current = setTimeout(step3, 2000);
+    }
+    function step3() {
+      setBotScore((prev) => ({ ...prev, [isCorrect ? 'correct' : 'regular']: (prev[isCorrect ? 'correct' : 'regular'] || 0) + 1 }));
+      setCurrentQuestion(null);
+      setCurrentModePlayer('_human');
+    }
   };
 
   const advanceToNextPlayer = () => {
