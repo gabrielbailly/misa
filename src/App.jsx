@@ -585,7 +585,7 @@ const teacherGameQuestions = [
 const getTeacherGameQuestions = (questions) => questions?.length ? questions : teacherGameQuestions;
 
 function TeacherGame({ canEditQuestions = false, closeLabel = 'Volver a Profesor', isStudent = false, onClose, onSaveQuestions, onSaveStudentList, questions: savedQuestions, studentList: savedStudentList }) {
-  const [gameMode, setGameMode] = useState('class');
+  const [gameMode, setGameMode] = useState(isStudent ? 'friends' : 'class');
   const [studentText, setStudentText] = useState(savedStudentList?.join('\n') || '');
   const [showStudentSetup, setShowStudentSetup] = useState(false);
   const [showQuestionEditor, setShowQuestionEditor] = useState(false);
