@@ -584,7 +584,7 @@ const teacherGameQuestions = [
 
 const getTeacherGameQuestions = (questions) => questions?.length ? questions : teacherGameQuestions;
 
-function TeacherGame({ canEditQuestions = false, closeLabel = 'Volver a Profesor', onClose, onSaveQuestions, onSaveStudentList, questions: savedQuestions, studentList: savedStudentList }) {
+function TeacherGame({ canEditQuestions = false, closeLabel = 'Volver a Profesor', isStudent = false, onClose, onSaveQuestions, onSaveStudentList, questions: savedQuestions, studentList: savedStudentList }) {
   const [gameMode, setGameMode] = useState('class');
   const [studentText, setStudentText] = useState(savedStudentList?.join('\n') || '');
   const [showStudentSetup, setShowStudentSetup] = useState(false);
@@ -628,6 +628,12 @@ function TeacherGame({ canEditQuestions = false, closeLabel = 'Volver a Profesor
     setStudentText(savedStudentList?.join('\n') || '');
   }, [savedStudentList]);
 
+  useEffect(() => {
+    if (gameMode === 'friends' && students.length > 0 && !currentModePlayer && !currentQuestion && !allQuestionsUsed) {
+      setCurrentModePlayer(students[0]);
+    }
+  }, [students, gameMode, currentModePlayer, currentQuestion, allQuestionsUsed]);
+
   useEffect(() => () => {
     window.clearTimeout(spinTimeoutRef.current);
     window.clearTimeout(questionTimeoutRef.current);
@@ -652,6 +658,11 @@ function TeacherGame({ canEditQuestions = false, closeLabel = 'Volver a Profesor
   const changeGameMode = (mode) => {
     setGameMode(mode);
     resetGameState();
+    if (mode === 'friends' && students.length > 0) {
+      setCurrentModePlayer(students[0]);
+    } else if (mode === 'bot') {
+      setCurrentModePlayer('_human');
+    }
   };
 
   const playSpinTick = () => {
@@ -718,6 +729,17 @@ function TeacherGame({ canEditQuestions = false, closeLabel = 'Volver a Profesor
     setCurrentModePlayer(playerName);
   };
 
+  const advanceToNextPlayer = () => {
+    if (gameMode === 'friends') {
+      if (!students.length) return;
+      const currentIndex = currentModePlayer ? students.indexOf(currentModePlayer) : -1;
+      const nextIndex = currentIndex < 0 ? 0 : (currentIndex + 1) % students.length;
+      setCurrentModePlayer(students[nextIndex]);
+    } else if (gameMode === 'bot') {
+      setCurrentModePlayer(currentModePlayer === '_human' ? '_bot' : '_human');
+    }
+  };
+
   const gradeAnswer = (grade) => {
     if (gameMode === 'class') {
       if (!selectedStudent) return;
@@ -743,7 +765,7 @@ function TeacherGame({ canEditQuestions = false, closeLabel = 'Volver a Profesor
         }
       }
       setCurrentQuestion(null);
-      setCurrentModePlayer('');
+      advanceToNextPlayer();
     }
   };
 
@@ -751,7 +773,7 @@ function TeacherGame({ canEditQuestions = false, closeLabel = 'Volver a Profesor
     const grade = Math.random() < 0.6 ? 'correct' : 'regular';
     setBotScore((prev) => ({ ...prev, [grade === 'correct' ? 'correct' : 'regular']: prev[grade === 'correct' ? 'correct' : 'regular'] + 1 }));
     setCurrentQuestion(null);
-    setCurrentModePlayer('');
+    setCurrentModePlayer('_human');
   };
 
   const saveStudentList = () => {
@@ -814,7 +836,7 @@ function TeacherGame({ canEditQuestions = false, closeLabel = 'Volver a Profesor
         </div>
       </div>
       <div className="game-mode-selector">
-        <button className={gameMode === 'class' ? 'game-mode-btn active' : 'game-mode-btn'} type="button" onClick={() => changeGameMode('class')}>En clase</button>
+        {!isStudent && <button className={gameMode === 'class' ? 'game-mode-btn active' : 'game-mode-btn'} type="button" onClick={() => changeGameMode('class')}>En clase</button>}
         <button className={gameMode === 'friends' ? 'game-mode-btn active' : 'game-mode-btn'} type="button" onClick={() => changeGameMode('friends')}>Con amigos</button>
         <button className={gameMode === 'bot' ? 'game-mode-btn active' : 'game-mode-btn'} type="button" onClick={() => changeGameMode('bot')}>Contra el bot</button>
       </div>
@@ -939,29 +961,17 @@ function TeacherGame({ canEditQuestions = false, closeLabel = 'Volver a Profesor
           <section className="teacher-game-stage">
             {!students.length && <p className="game-empty">Añade alumnos desde Lista de alumnos.</p>}
             {students.length > 0 && allQuestionsUsed && <p className="game-empty">Todas las preguntas se han usado. Pulsa Reiniciar juego.</p>}
-            {students.length > 0 && !allQuestionsUsed && !currentModePlayer && !currentQuestion && (
-              <div className="player-select-area">
-                <p className="game-empty">Toca la tarjeta de un jugador para preguntarle.</p>
-                <div className="player-cards-grid">
-                  {students.map((name) => {
-                    const score = playerScores[name];
-                    return (
-                      <button className="player-card-select" key={name} type="button" onClick={() => setCurrentModePlayer(name)}>
-                        <strong className="player-card-name">{name}</strong>
-                        <span className="player-card-score">Correctas: {score?.correct || 0} · Regulares: {score?.regular || 0}</span>
-                      </button>
-                    );
-                  })}
-                </div>
-              </div>
-            )}
-            {currentModePlayer && !currentQuestion && !allQuestionsUsed && (
+            {students.length > 0 && !allQuestionsUsed && currentModePlayer && !currentQuestion && (
               <div className="player-select-area">
                 <p className="game-empty">Turno de: <strong>{currentModePlayer}</strong></p>
                 <button className="primary-button" type="button" onClick={() => askQuestionForPlayer(currentModePlayer)} disabled={!availableQuestions.length}>
                   Preguntar
                 </button>
-                <button className="secondary-button" type="button" onClick={() => setCurrentModePlayer('')}>Cambiar jugador</button>
+                <button className="secondary-button" type="button" onClick={() => {
+                  const currentIndex = students.indexOf(currentModePlayer);
+                  const nextIndex = (currentIndex + 1) % students.length;
+                  setCurrentModePlayer(students[nextIndex]);
+                }}>Saltar jugador</button>
               </div>
             )}
           </section>
@@ -985,22 +995,7 @@ function TeacherGame({ canEditQuestions = false, closeLabel = 'Volver a Profesor
           <section className="teacher-game-stage">
             {!students.length && <p className="game-empty">Añade alumnos desde Lista de alumnos.</p>}
             {students.length > 0 && allQuestionsUsed && <p className="game-empty">Todas las preguntas se han usado. Pulsa Reiniciar juego.</p>}
-            {students.length > 0 && !allQuestionsUsed && !currentModePlayer && !currentQuestion && (
-              <div className="player-select-area">
-                <p className="game-empty">Toca una tarjeta para preguntar.</p>
-                <div className="player-cards-grid">
-                  <button className="player-card-select" type="button" onClick={() => setCurrentModePlayer('_human')}>
-                    <strong className="player-card-name">Jugador</strong>
-                    <span className="player-card-score">Correctas: {playerScores['_human']?.correct || 0} · Regulares: {playerScores['_human']?.regular || 0}</span>
-                  </button>
-                  <button className="player-card-select bot-card" type="button" onClick={() => setCurrentModePlayer('_bot')}>
-                    <strong className="player-card-name">Bot</strong>
-                    <span className="player-card-score">Correctas: {botScore.correct} · Regulares: {botScore.regular}</span>
-                  </button>
-                </div>
-              </div>
-            )}
-            {currentModePlayer && !currentQuestion && !allQuestionsUsed && (
+            {students.length > 0 && !allQuestionsUsed && currentModePlayer && !currentQuestion && (
               <div className="player-select-area">
                 <p className="game-empty">Turno de: <strong>{currentModePlayer === '_bot' ? 'Bot' : 'Jugador'}</strong></p>
                 <button className="primary-button" type="button" onClick={() => {
@@ -1015,7 +1010,6 @@ function TeacherGame({ canEditQuestions = false, closeLabel = 'Volver a Profesor
                 }} disabled={!availableQuestions.length}>
                   Preguntar
                 </button>
-                <button className="secondary-button" type="button" onClick={() => setCurrentModePlayer('')}>Cambiar jugador</button>
               </div>
             )}
             {currentModePlayer === '_bot' && currentQuestion && (
@@ -2287,7 +2281,7 @@ export default function App() {
       ) : showStudentGame ? (
         <main className="teacher-page">
           <div className="teacher-page-shell">
-            <TeacherGame closeLabel="Volver" onClose={() => setShowStudentGame(false)} questions={gameQuestions} />
+            <TeacherGame closeLabel="Volver" onClose={() => setShowStudentGame(false)} questions={gameQuestions} isStudent />
           </div>
         </main>
       ) : showCover ? (
