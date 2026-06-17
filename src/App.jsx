@@ -649,7 +649,7 @@ function TeacherGame({ canEditQuestions = false, closeLabel = 'Volver a Profesor
       setCurrentModePlayer('_human');
       setBotAnswerRevealed(false);
       setBotAnswerResult(null);
-    }, 2000);
+    }, 4000);
     return () => clearTimeout(tid);
   }, [gameMode, currentModePlayer, currentQuestion, botAnswerRevealed, botAnswerResult]);
 
