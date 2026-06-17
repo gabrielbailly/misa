@@ -42,6 +42,7 @@ const ACTIVITY_OVERRIDES_KEY = 'misa-activity-overrides';
 const GAME_VISIBLE_KEY = 'misa-game-visible';
 const GAME_QUESTIONS_KEY = 'misa-game-questions';
 const IMAGE_OVERRIDES_KEY = 'misa-image-overrides';
+const STUDENT_LIST_KEY = 'misa-student-list';
 const TEACHER_EMAILS = (import.meta.env.VITE_TEACHER_EMAILS || '')
   .split(',')
   .map((email) => email.trim().toLowerCase())
@@ -583,8 +584,9 @@ const teacherGameQuestions = [
 
 const getTeacherGameQuestions = (questions) => questions?.length ? questions : teacherGameQuestions;
 
-function TeacherGame({ canEditQuestions = false, closeLabel = 'Volver a Profesor', onClose, onSaveQuestions, questions: savedQuestions }) {
-  const [studentText, setStudentText] = useState('');
+function TeacherGame({ canEditQuestions = false, closeLabel = 'Volver a Profesor', onClose, onSaveQuestions, onSaveStudentList, questions: savedQuestions, studentList: savedStudentList }) {
+  const [gameMode, setGameMode] = useState('class');
+  const [studentText, setStudentText] = useState(savedStudentList?.join('\n') || '');
   const [showStudentSetup, setShowStudentSetup] = useState(false);
   const [showQuestionEditor, setShowQuestionEditor] = useState(false);
   const [editingQuestionId, setEditingQuestionId] = useState('');
@@ -597,6 +599,10 @@ function TeacherGame({ canEditQuestions = false, closeLabel = 'Volver a Profesor
   const [usedStudents, setUsedStudents] = useState([]);
   const [correctStudents, setCorrectStudents] = useState([]);
   const [regularStudents, setRegularStudents] = useState([]);
+  const [usedQuestions, setUsedQuestions] = useState([]);
+  const [playerScores, setPlayerScores] = useState({});
+  const [botScore, setBotScore] = useState({ correct: 0, regular: 0 });
+  const [currentModePlayer, setCurrentModePlayer] = useState('');
   const spinTimeoutRef = useRef(null);
   const questionTimeoutRef = useRef(null);
   const soundIntervalRef = useRef(null);
@@ -604,6 +610,8 @@ function TeacherGame({ canEditQuestions = false, closeLabel = 'Volver a Profesor
   const questions = getTeacherGameQuestions(savedQuestions);
   const students = getUniqueNames(studentText);
   const availableStudents = students.filter((name) => !usedStudents.includes(name));
+  const availableQuestions = questions.filter((q) => !usedQuestions.includes(q.id));
+  const allQuestionsUsed = questions.length > 0 && usedQuestions.length >= questions.length;
   const editingQuestion = questionDrafts.find((question) => question.id === editingQuestionId);
   const partOptions = [...new Set([...teacherGameQuestions, ...questionDrafts].map((question) => question.part).filter(Boolean))];
   const cardOptions = [...new Set([...teacherGameQuestions, ...questionDrafts].map((question) => question.card).filter(Boolean))];
@@ -616,12 +624,35 @@ function TeacherGame({ canEditQuestions = false, closeLabel = 'Volver a Profesor
     setQuestionDrafts(getTeacherGameQuestions(savedQuestions));
   }, [savedQuestions]);
 
+  useEffect(() => {
+    setStudentText(savedStudentList?.join('\n') || '');
+  }, [savedStudentList]);
+
   useEffect(() => () => {
     window.clearTimeout(spinTimeoutRef.current);
     window.clearTimeout(questionTimeoutRef.current);
     window.clearInterval(soundIntervalRef.current);
     audioContextRef.current?.close();
   }, []);
+
+  const resetGameState = () => {
+    setUsedStudents([]);
+    setCorrectStudents([]);
+    setRegularStudents([]);
+    setUsedQuestions([]);
+    setPlayerScores({});
+    setBotScore({ correct: 0, regular: 0 });
+    setSelectedStudent('');
+    setCurrentQuestion(null);
+    setIsSpinning(false);
+    setIsQuestionPending(false);
+    setCurrentModePlayer('');
+  };
+
+  const changeGameMode = (mode) => {
+    setGameMode(mode);
+    resetGameState();
+  };
 
   const playSpinTick = () => {
     const AudioContext = window.AudioContext || window.webkitAudioContext;
@@ -651,7 +682,7 @@ function TeacherGame({ canEditQuestions = false, closeLabel = 'Volver a Profesor
   };
 
   const spinStudent = () => {
-    if (!availableStudents.length || !questions.length || isSpinning || isQuestionPending || currentQuestion) return;
+    if (!availableStudents.length || !availableQuestions.length || isSpinning || isQuestionPending || currentQuestion) return;
     setIsSpinning(true);
     setIsQuestionPending(false);
     setCurrentQuestion(null);
@@ -670,20 +701,63 @@ function TeacherGame({ canEditQuestions = false, closeLabel = 'Volver a Profesor
       setUsedStudents((names) => addUniqueName(names, nextStudent));
       setIsQuestionPending(true);
       questionTimeoutRef.current = window.setTimeout(() => {
-        setCurrentQuestion(questions[Math.floor(Math.random() * questions.length)]);
+        const nextQuestion = availableQuestions[Math.floor(Math.random() * availableQuestions.length)];
+        setCurrentQuestion(nextQuestion);
+        setUsedQuestions((ids) => addUniqueName(ids, nextQuestion.id));
         setIsQuestionPending(false);
       }, 2000);
     };
     spin();
   };
 
+  const askQuestionForPlayer = (playerName) => {
+    if (!availableQuestions.length) return;
+    const nextQuestion = availableQuestions[Math.floor(Math.random() * availableQuestions.length)];
+    setCurrentQuestion(nextQuestion);
+    setUsedQuestions((ids) => addUniqueName(ids, nextQuestion.id));
+    setCurrentModePlayer(playerName);
+  };
+
   const gradeAnswer = (grade) => {
-    if (!selectedStudent) return;
-    if (grade === 'correct') setCorrectStudents((names) => addUniqueName(names, selectedStudent));
-    if (grade === 'regular') setRegularStudents((names) => addUniqueName(names, selectedStudent));
+    if (gameMode === 'class') {
+      if (!selectedStudent) return;
+      if (grade === 'correct') setCorrectStudents((names) => addUniqueName(names, selectedStudent));
+      if (grade === 'regular') setRegularStudents((names) => addUniqueName(names, selectedStudent));
+      setCurrentQuestion(null);
+      setIsQuestionPending(false);
+      setSelectedStudent('');
+    } else {
+      const player = currentModePlayer;
+      if (!player) return;
+      if (grade === 'correct' || grade === 'regular') {
+        if (player === '_bot') {
+          setBotScore((prev) => ({ ...prev, [grade === 'correct' ? 'correct' : 'regular']: prev[grade === 'correct' ? 'correct' : 'regular'] + 1 }));
+        } else {
+          setPlayerScores((prev) => ({
+            ...prev,
+            [player]: {
+              correct: (prev[player]?.correct || 0) + (grade === 'correct' ? 1 : 0),
+              regular: (prev[player]?.regular || 0) + (grade === 'regular' ? 1 : 0),
+            },
+          }));
+        }
+      }
+      setCurrentQuestion(null);
+      setCurrentModePlayer('');
+    }
+  };
+
+  const botAutoAnswer = () => {
+    const grade = Math.random() < 0.6 ? 'correct' : 'regular';
+    setBotScore((prev) => ({ ...prev, [grade === 'correct' ? 'correct' : 'regular']: prev[grade === 'correct' ? 'correct' : 'regular'] + 1 }));
     setCurrentQuestion(null);
-    setIsQuestionPending(false);
-    setSelectedStudent('');
+    setCurrentModePlayer('');
+  };
+
+  const saveStudentList = () => {
+    const nextStudents = getUniqueNames(studentText);
+    onSaveStudentList?.(nextStudents);
+    setShowStudentSetup(false);
   };
 
   const saveQuestionDrafts = (nextQuestions) => {
@@ -722,6 +796,11 @@ function TeacherGame({ canEditQuestions = false, closeLabel = 'Volver a Profesor
     }));
   };
 
+  const getPlayerTotalScore = (playerName) => {
+    const score = playerScores[playerName];
+    return (score?.correct || 0) + (score?.regular || 0);
+  };
+
   return (
     <div className="teacher-game">
       <div className="teacher-game-header">
@@ -730,10 +809,24 @@ function TeacherGame({ canEditQuestions = false, closeLabel = 'Volver a Profesor
           <h3>¿Conoces lo que pasa en Misa?</h3>
         </div>
         <div className="teacher-page-header-actions">
-          <button className="primary-button" type="button" onClick={() => setShowStudentSetup(true)}>Lista de alumnos</button>
           {canEditQuestions && <button className="secondary-button" type="button" onClick={() => setShowQuestionEditor(true)}>Editar preguntas</button>}
           <button className="secondary-button" type="button" onClick={onClose}>{closeLabel}</button>
         </div>
+      </div>
+      <div className="game-mode-selector">
+        <button className={gameMode === 'class' ? 'game-mode-btn active' : 'game-mode-btn'} type="button" onClick={() => changeGameMode('class')}>En clase</button>
+        <button className={gameMode === 'friends' ? 'game-mode-btn active' : 'game-mode-btn'} type="button" onClick={() => changeGameMode('friends')}>Con amigos</button>
+        <button className={gameMode === 'bot' ? 'game-mode-btn active' : 'game-mode-btn'} type="button" onClick={() => changeGameMode('bot')}>Contra el bot</button>
+      </div>
+      <div className="teacher-game-setup-bar">
+        <button className="secondary-button" type="button" onClick={() => setShowStudentSetup(true)}>Lista de alumnos {students.length ? `(${students.length})` : ''}</button>
+        {!allQuestionsUsed && availableQuestions.length < questions.length && (
+          <span className="game-used-count">{usedQuestions.length} de {questions.length} preguntas usadas</span>
+        )}
+        {allQuestionsUsed && (
+          <span className="game-all-used">Todas las preguntas usadas</span>
+        )}
+        <button className="secondary-button" type="button" onClick={resetGameState}>Reiniciar juego</button>
       </div>
       {showStudentSetup && (
         <div className="modal-overlay" onClick={() => setShowStudentSetup(false)}>
@@ -741,8 +834,8 @@ function TeacherGame({ canEditQuestions = false, closeLabel = 'Volver a Profesor
             <button className="modal-close" type="button" onClick={() => setShowStudentSetup(false)}><X /></button>
             <label htmlFor="student-list">Lista de alumnos</label>
             <textarea id="student-list" value={studentText} onChange={(event) => setStudentText(event.target.value)} placeholder="Pega aquí los nombres, uno por línea o separados por comas" rows="9" autoFocus />
-            <p>{students.length} alumnos preparados sin repetir. {availableStudents.length} quedan por salir. {questions.length} preguntas disponibles.</p>
-            <button className="primary-button" type="button" onClick={() => setShowStudentSetup(false)} disabled={!students.length}>Guardar lista</button>
+            <p>{students.length} alumnos preparados sin repetir. {questions.length} preguntas disponibles.</p>
+            <button className="primary-button" type="button" onClick={saveStudentList} disabled={!students.length}>Guardar lista</button>
           </section>
         </div>
       )}
@@ -764,8 +857,8 @@ function TeacherGame({ canEditQuestions = false, closeLabel = 'Volver a Profesor
               <table className="question-editor-table">
                 <thead>
                   <tr>
-                    <th><button className="question-sort-button" type="button" onClick={() => sortQuestionsBy('part')}>Parte {questionSort.field === 'part' ? questionSort.direction === 'asc' ? '↑' : '↓' : ''}</button></th>
-                    <th><button className="question-sort-button" type="button" onClick={() => sortQuestionsBy('card')}>Tema {questionSort.field === 'card' ? questionSort.direction === 'asc' ? '↑' : '↓' : ''}</button></th>
+                    <th><button className="question-sort-button" type="button" onClick={() => sortQuestionsBy('part')}>Parte {questionSort.field === 'part' ? questionSort.direction === 'asc' ? '\u2191' : '\u2193' : ''}</button></th>
+                    <th><button className="question-sort-button" type="button" onClick={() => sortQuestionsBy('card')}>Tema {questionSort.field === 'card' ? questionSort.direction === 'asc' ? '\u2191' : '\u2193' : ''}</button></th>
                     <th>Pregunta</th>
                     <th>Respuesta orientativa</th>
                     <th>Eliminar</th>
@@ -812,27 +905,200 @@ function TeacherGame({ canEditQuestions = false, closeLabel = 'Volver a Profesor
           </section>
         </div>
       )}
-      <div className="teacher-game-grid">
-        <section className="teacher-game-stage">
-          <p className="game-empty">{students.length ? `${students.length} alumnos cargados. ${availableStudents.length} quedan por salir.` : 'Pulsa Lista de alumnos para pegar los nombres.'}</p>
-          <div className={isSpinning ? 'roulette-name spinning' : 'roulette-name'}>{selectedStudent || 'Pulsa la ruleta'}</div>
-          <button className="primary-button spin-button" type="button" onClick={spinStudent} disabled={!availableStudents.length || !questions.length || isSpinning || isQuestionPending || Boolean(currentQuestion)}>
-            {isSpinning ? 'Girando...' : isQuestionPending ? 'Preparando pregunta...' : availableStudents.length ? 'Girar ruleta' : 'Ya han salido todos'}
-          </button>
-          <p className="game-empty">Al detenerse la ruleta aparecerá una pregunta en el centro de la pantalla.</p>
-        </section>
-        <div className="game-results">
-          <section>
-            <h4>Correctas</h4>
-            {correctStudents.length ? <ul>{correctStudents.map((name) => <li key={name}>{name}</li>)}</ul> : <p>Todavía no hay alumnos.</p>}
+      {gameMode === 'class' && (
+        <div className="teacher-game-grid">
+          <section className="teacher-game-stage">
+            {!students.length && <p className="game-empty">Pulsa Lista de alumnos para pegar los nombres.</p>}
+            {students.length > 0 && availableStudents.length === 0 && !isSpinning && (
+              <p className="game-empty">Ya han salido todos los alumnos. Pulsa Reiniciar juego para empezar otra ronda.</p>
+            )}
+            {students.length > 0 && availableQuestions.length === 0 && usedQuestions.length > 0 && (
+              <p className="game-empty">Todas las preguntas se han usado. Pulsa Reiniciar juego para empezar otra ronda.</p>
+            )}
+            <p className="game-empty">{students.length ? `${students.length} alumnos cargados. ${availableStudents.length} quedan por salir.` : ''}</p>
+            <div className={isSpinning ? 'roulette-name spinning' : 'roulette-name'}>{selectedStudent || (students.length ? 'Pulsa la ruleta' : '')}</div>
+            <button className="primary-button spin-button" type="button" onClick={spinStudent} disabled={!availableStudents.length || !availableQuestions.length || isSpinning || isQuestionPending || Boolean(currentQuestion)}>
+              {isSpinning ? 'Girando...' : isQuestionPending ? 'Preparando pregunta...' : (!availableStudents.length || allQuestionsUsed) ? 'Reiniciar para jugar' : availableStudents.length ? 'Girar ruleta' : 'Ya han salido todos'}
+            </button>
+            <p className="game-empty">Al detenerse la ruleta aparecerá una pregunta en el centro de la pantalla.</p>
           </section>
-          <section>
-            <h4>Regulares</h4>
-            {regularStudents.length ? <ul>{regularStudents.map((name) => <li key={name}>{name}</li>)}</ul> : <p>Todavía no hay alumnos.</p>}
-          </section>
+          <div className="game-results">
+            <section>
+              <h4>Correctas</h4>
+              {correctStudents.length ? <ul>{correctStudents.map((name) => <li key={name}>{name}</li>)}</ul> : <p>Todavía no hay alumnos.</p>}
+            </section>
+            <section>
+              <h4>Regulares</h4>
+              {regularStudents.length ? <ul>{regularStudents.map((name) => <li key={name}>{name}</li>)}</ul> : <p>Todavía no hay alumnos.</p>}
+            </section>
+          </div>
         </div>
-      </div>
-      {currentQuestion && (
+      )}
+      {gameMode === 'friends' && (
+        <div className="teacher-game-grid">
+          <section className="teacher-game-stage">
+            {!students.length && <p className="game-empty">Añade alumnos desde Lista de alumnos.</p>}
+            {students.length > 0 && allQuestionsUsed && <p className="game-empty">Todas las preguntas se han usado. Pulsa Reiniciar juego.</p>}
+            {students.length > 0 && !allQuestionsUsed && !currentModePlayer && !currentQuestion && (
+              <div className="player-select-area">
+                <p className="game-empty">Toca la tarjeta de un jugador para preguntarle.</p>
+                <div className="player-cards-grid">
+                  {students.map((name) => {
+                    const score = playerScores[name];
+                    return (
+                      <button className="player-card-select" key={name} type="button" onClick={() => setCurrentModePlayer(name)}>
+                        <strong className="player-card-name">{name}</strong>
+                        <span className="player-card-score">Correctas: {score?.correct || 0} · Regulares: {score?.regular || 0}</span>
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
+            {currentModePlayer && !currentQuestion && !allQuestionsUsed && (
+              <div className="player-select-area">
+                <p className="game-empty">Turno de: <strong>{currentModePlayer}</strong></p>
+                <button className="primary-button" type="button" onClick={() => askQuestionForPlayer(currentModePlayer)} disabled={!availableQuestions.length}>
+                  Preguntar
+                </button>
+                <button className="secondary-button" type="button" onClick={() => setCurrentModePlayer('')}>Cambiar jugador</button>
+              </div>
+            )}
+          </section>
+          <div className="game-results">
+            {students.map((name) => {
+              const score = playerScores[name];
+              return (
+                <section key={name} className={'player-result-card' + (currentModePlayer === name ? ' active' : '')}>
+                  <h4>{name}</h4>
+                  <p>Correctas: {score?.correct || 0}</p>
+                  <p>Regulares: {score?.regular || 0}</p>
+                  <p>Total: {(score?.correct || 0) + (score?.regular || 0)}</p>
+                </section>
+              );
+            })}
+          </div>
+        </div>
+      )}
+      {gameMode === 'bot' && (
+        <div className="teacher-game-grid">
+          <section className="teacher-game-stage">
+            {!students.length && <p className="game-empty">Añade alumnos desde Lista de alumnos.</p>}
+            {students.length > 0 && allQuestionsUsed && <p className="game-empty">Todas las preguntas se han usado. Pulsa Reiniciar juego.</p>}
+            {students.length > 0 && !allQuestionsUsed && !currentModePlayer && !currentQuestion && (
+              <div className="player-select-area">
+                <p className="game-empty">Toca una tarjeta para preguntar.</p>
+                <div className="player-cards-grid">
+                  <button className="player-card-select" type="button" onClick={() => setCurrentModePlayer('_human')}>
+                    <strong className="player-card-name">Jugador</strong>
+                    <span className="player-card-score">Correctas: {playerScores['_human']?.correct || 0} · Regulares: {playerScores['_human']?.regular || 0}</span>
+                  </button>
+                  <button className="player-card-select bot-card" type="button" onClick={() => setCurrentModePlayer('_bot')}>
+                    <strong className="player-card-name">Bot</strong>
+                    <span className="player-card-score">Correctas: {botScore.correct} · Regulares: {botScore.regular}</span>
+                  </button>
+                </div>
+              </div>
+            )}
+            {currentModePlayer && !currentQuestion && !allQuestionsUsed && (
+              <div className="player-select-area">
+                <p className="game-empty">Turno de: <strong>{currentModePlayer === '_bot' ? 'Bot' : 'Jugador'}</strong></p>
+                <button className="primary-button" type="button" onClick={() => {
+                  if (currentModePlayer === '_bot') {
+                    const nextQuestion = availableQuestions[Math.floor(Math.random() * availableQuestions.length)];
+                    if (!nextQuestion) return;
+                    setCurrentQuestion(nextQuestion);
+                    setUsedQuestions((ids) => addUniqueName(ids, nextQuestion.id));
+                  } else {
+                    askQuestionForPlayer('_human');
+                  }
+                }} disabled={!availableQuestions.length}>
+                  Preguntar
+                </button>
+                <button className="secondary-button" type="button" onClick={() => setCurrentModePlayer('')}>Cambiar jugador</button>
+              </div>
+            )}
+            {currentModePlayer === '_bot' && currentQuestion && (
+              <div className="question-auto-area">
+                <p className="game-empty">Bot respondiendo...</p>
+              </div>
+            )}
+          </section>
+          <div className="game-results">
+            <section className={'player-result-card' + (currentModePlayer === '_human' ? ' active' : '')}>
+              <h4>Jugador</h4>
+              <p>Correctas: {playerScores['_human']?.correct || 0}</p>
+              <p>Regulares: {playerScores['_human']?.regular || 0}</p>
+              <p>Total: {(playerScores['_human']?.correct || 0) + (playerScores['_human']?.regular || 0)}</p>
+            </section>
+            <section className={'player-result-card' + (currentModePlayer === '_bot' ? ' active' : '')}>
+              <h4>Bot</h4>
+              <p>Correctas: {botScore.correct}</p>
+              <p>Regulares: {botScore.regular}</p>
+              <p>Total: {botScore.correct + botScore.regular}</p>
+            </section>
+          </div>
+        </div>
+      )}
+      {currentQuestion && gameMode === 'friends' && (
+        <div className="modal-overlay game-question-overlay" onClick={() => {
+          if (currentModePlayer !== '_bot') return;
+          botAutoAnswer();
+        }}>
+          <div className="game-question-card game-question-modal" onClick={e => e.stopPropagation()}>
+            <p className="eyebrow">{currentModePlayer} · {currentQuestion.part} · {currentQuestion.card}</p>
+            <h4>{currentQuestion.prompt}</h4>
+            {currentQuestion.answer && (
+              <details className="game-answer">
+                <summary>Ver respuesta orientativa</summary>
+                <p>{currentQuestion.answer}</p>
+              </details>
+            )}
+            <div className="game-grade-actions">
+              <button className="primary-button correct" type="button" onClick={() => gradeAnswer('correct')}>Correcta</button>
+              <button className="secondary-button regular" type="button" onClick={() => gradeAnswer('regular')}>Regular</button>
+              <button className="secondary-button wrong" type="button" onClick={() => gradeAnswer('wrong')}>Incorrecta</button>
+            </div>
+          </div>
+        </div>
+      )}
+      {currentQuestion && gameMode === 'bot' && currentModePlayer !== '_bot' && (
+        <div className="modal-overlay game-question-overlay">
+          <div className="game-question-card game-question-modal" onClick={e => e.stopPropagation()}>
+            <p className="eyebrow">Jugador · {currentQuestion.part} · {currentQuestion.card}</p>
+            <h4>{currentQuestion.prompt}</h4>
+            {currentQuestion.answer && (
+              <details className="game-answer">
+                <summary>Ver respuesta orientativa</summary>
+                <p>{currentQuestion.answer}</p>
+              </details>
+            )}
+            <div className="game-grade-actions">
+              <button className="primary-button correct" type="button" onClick={() => gradeAnswer('correct')}>Correcta</button>
+              <button className="secondary-button regular" type="button" onClick={() => gradeAnswer('regular')}>Regular</button>
+              <button className="secondary-button wrong" type="button" onClick={() => gradeAnswer('wrong')}>Incorrecta</button>
+            </div>
+          </div>
+        </div>
+      )}
+      {currentQuestion && gameMode === 'bot' && currentModePlayer === '_bot' && (
+        <div className="modal-overlay game-question-overlay">
+          <div className="game-question-card game-question-modal" onClick={e => e.stopPropagation()}>
+            <p className="eyebrow">Bot · {currentQuestion.part} · {currentQuestion.card}</p>
+            <h4>{currentQuestion.prompt}</h4>
+            {currentQuestion.answer && (
+              <details className="game-answer">
+                <summary>Ver respuesta orientativa</summary>
+                <p>{currentQuestion.answer}</p>
+              </details>
+            )}
+            <div className="game-grade-actions">
+              <button className="primary-button correct" type="button" onClick={botAutoAnswer}>El bot responde</button>
+            </div>
+          </div>
+        </div>
+      )}
+      {currentQuestion && gameMode === 'class' && (
         <div className="modal-overlay game-question-overlay">
           <div className="game-question-card game-question-modal" onClick={e => e.stopPropagation()}>
             <p className="eyebrow">{selectedStudent} · {currentQuestion.part} · {currentQuestion.card}</p>
@@ -874,6 +1140,7 @@ function TeacherPage({
   onSaveActivities,
   onSaveGameQuestions,
   onSaveImage,
+  onSaveStudentList,
   onToggleGameVisible,
   onSaveIntro,
   onSaveText,
@@ -882,6 +1149,7 @@ function TeacherPage({
   onUnlockAll,
   teacher,
   teacherAllowed,
+  studentList,
 }) {
   const [className, setClassName] = useState('');
   const [editingCard, setEditingCard] = useState(null);
@@ -1046,7 +1314,7 @@ function TeacherPage({
           </div>
         </div>
         {showTeacherGame ? (
-          <TeacherGame canEditQuestions onClose={() => setShowTeacherGame(false)} onSaveQuestions={onSaveGameQuestions} questions={gameQuestions} />
+          <TeacherGame canEditQuestions onClose={() => setShowTeacherGame(false)} onSaveQuestions={onSaveGameQuestions} onSaveStudentList={onSaveStudentList} questions={gameQuestions} studentList={studentList} />
         ) : (
           <>
         <details className="teacher-guide">
@@ -1667,6 +1935,13 @@ export default function App() {
     }
   });
   const [gameVisible, setGameVisible] = useState(() => localStorage.getItem(GAME_VISIBLE_KEY) === 'true');
+  const [studentList, setStudentList] = useState(() => {
+    try {
+      return JSON.parse(localStorage.getItem(STUDENT_LIST_KEY)) || [];
+    } catch {
+      return [];
+    }
+  });
   const editableSections = applyImageOverrides(applyActivityOverrides(applyTextOverrides(cloneMisaData(), textOverrides), activityOverrides), imageOverrides);
   const introText = getIntroText(introOverrides);
   const canOpenTeacherPage = isFirebaseConfigured ? Boolean(teacher && teacherAllowed) : isLocalTeacher;
@@ -1807,6 +2082,7 @@ export default function App() {
     setImageOverrides(nextClass.imageOverrides || {});
     setGameQuestions(nextGameQuestions || teacherGameQuestions);
     setGameVisible(Boolean(nextClass.gameVisible));
+    setStudentList(nextClass.studentNames || []);
     localStorage.setItem(ACTIVE_CLASS_KEY, nextClass.id);
   };
 
@@ -1836,6 +2112,7 @@ export default function App() {
       imageOverrides: {},
       gameQuestions: teacherGameQuestions,
       gameVisible: false,
+      studentNames: [],
       createdAt: serverTimestamp(),
       updatedAt: serverTimestamp(),
     };
@@ -1865,7 +2142,8 @@ export default function App() {
     nextActivityOverrides = activityOverrides,
     nextImageOverrides = imageOverrides,
     nextGameVisible = gameVisible,
-    nextGameQuestions = gameQuestions
+    nextGameQuestions = gameQuestions,
+    nextStudentList = studentList
   ) => {
     if (!isFirebaseConfigured || !db || !activeClass) {
       if (isFirebaseConfigured) return;
@@ -1876,6 +2154,7 @@ export default function App() {
       localStorage.setItem(IMAGE_OVERRIDES_KEY, JSON.stringify(nextImageOverrides));
       localStorage.setItem(GAME_VISIBLE_KEY, JSON.stringify(nextGameVisible));
       localStorage.setItem(GAME_QUESTIONS_KEY, JSON.stringify(nextGameQuestions));
+      localStorage.setItem(STUDENT_LIST_KEY, JSON.stringify(nextStudentList));
       return;
     }
     setIsSaving(true);
@@ -1888,6 +2167,7 @@ export default function App() {
         imageOverrides: nextImageOverrides,
         gameVisible: nextGameVisible,
         gameQuestions: nextGameQuestions,
+        studentNames: nextStudentList,
         updatedAt: serverTimestamp(),
       }, { merge: true });
     } finally {
@@ -1950,6 +2230,11 @@ export default function App() {
     await saveClassState(lockedSections, textOverrides, introOverrides, activityOverrides, imageOverrides, gameVisible, nextGameQuestions);
   };
 
+  const saveStudentList = async (nextStudentList) => {
+    setStudentList(nextStudentList);
+    await saveClassState(lockedSections, textOverrides, introOverrides, activityOverrides, imageOverrides, gameVisible, gameQuestions, nextStudentList);
+  };
+
   return (
     <div className="page-shell">
       {prayerModal && (
@@ -1976,23 +2261,24 @@ export default function App() {
           editableSections={editableSections}
           firebaseEnabled={isFirebaseConfigured}
           gameQuestions={gameQuestions}
-          gameVisible={gameVisible}
-          imageOverrides={imageOverrides}
-          introText={introText}
-          isSaving={isSaving}
-          lockedSections={lockedSections}
-          onClose={closeTeacherPage}
-          onCreateClass={createClass}
-          onLockAll={() => saveLockedSections(misaData.map((section) => section.id))}
-          onLogout={logoutTeacher}
-          onAddTeacherEmail={addTeacherEmail}
-          onSaveActivities={saveActivities}
-          onSaveGameQuestions={saveGameQuestions}
-          onSaveImage={saveImage}
-          onSaveIntro={saveIntro}
-          onSaveText={saveText}
-          onSelectClass={selectClass}
-          onToggleGameVisible={toggleGameVisible}
+           gameVisible={gameVisible}
+           imageOverrides={imageOverrides}
+           introText={introText}
+           isSaving={isSaving}
+           lockedSections={lockedSections}
+           onClose={closeTeacherPage}
+           onCreateClass={createClass}
+           onLogout={logoutTeacher}
+           onAddTeacherEmail={addTeacherEmail}
+           onSaveActivities={saveActivities}
+           onSaveGameQuestions={saveGameQuestions}
+           onSaveImage={saveImage}
+           onSaveIntro={saveIntro}
+           onSaveStudentList={saveStudentList}
+           onSaveText={saveText}
+           onSelectClass={selectClass}
+           onToggleGameVisible={toggleGameVisible}
+           studentList={studentList}
           onUnlockAll={() => saveLockedSections([])}
           onToggleSection={toggleLockedSection}
           teacher={teacher}
