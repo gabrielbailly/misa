@@ -604,7 +604,6 @@ function TeacherGame({ canEditQuestions = false, closeLabel = 'Volver a Profesor
   const [botScore, setBotScore] = useState({ correct: 0, regular: 0 });
   const [currentModePlayer, setCurrentModePlayer] = useState('');
   const [gameStarted, setGameStarted] = useState(false);
-  const [playerNameInput, setPlayerNameInput] = useState('');
   const spinTimeoutRef = useRef(null);
   const questionTimeoutRef = useRef(null);
   const soundIntervalRef = useRef(null);
@@ -658,18 +657,6 @@ function TeacherGame({ canEditQuestions = false, closeLabel = 'Volver a Profesor
     if (isStudent && mode === 'bot') {
       setGameStarted(true);
       setCurrentModePlayer('_human');
-    }
-  };
-
-  const addStudentPlayer = () => {
-    const name = playerNameInput.trim();
-    if (!name) return;
-    const updated = addUniqueName(students, name);
-    setStudentText(updated.join('\n'));
-    setPlayerNameInput('');
-    if (!gameStarted) {
-      setGameStarted(true);
-      setCurrentModePlayer(updated[0]);
     }
   };
 
@@ -857,7 +844,7 @@ function TeacherGame({ canEditQuestions = false, closeLabel = 'Volver a Profesor
         {!isStudent && <button className={gameMode === 'class' ? 'game-mode-btn active' : 'game-mode-btn'} type="button" onClick={() => changeGameMode('class')}>En clase</button>}
         <button className={gameMode === 'friends' ? 'game-mode-btn active' : 'game-mode-btn'} type="button" onClick={() => changeGameMode('friends')}>Con amigos</button>
         <button className={gameMode === 'bot' ? 'game-mode-btn active' : 'game-mode-btn'} type="button" onClick={() => changeGameMode('bot')}>Contra el bot</button>
-        {gameMode !== 'class' && !isStudent && (
+        {gameMode !== 'class' && (
           <button className="student-list-btn" type="button" onClick={() => setShowStudentSetup(true)}>
             Lista de jugadores{students.length ? ` (${students.length})` : ''}
           </button>
@@ -994,16 +981,7 @@ function TeacherGame({ canEditQuestions = false, closeLabel = 'Volver a Profesor
       {gameMode === 'friends' && gameStarted && (
         <div className="teacher-game-grid">
           <section className="teacher-game-stage">
-            {!students.length && isStudent && (
-              <div className="player-select-area">
-                <p className="game-empty">Añade un jugador para empezar</p>
-                <div className="inline-player-input">
-                  <input value={playerNameInput} onChange={(e) => setPlayerNameInput(e.target.value)} placeholder="Nombre del jugador" onKeyDown={(e) => e.key === 'Enter' && addStudentPlayer()} />
-                  <button className="primary-button" type="button" onClick={addStudentPlayer}>Añadir</button>
-                </div>
-              </div>
-            )}
-            {!students.length && !isStudent && <p className="game-empty">Añade alumnos desde Lista de alumnos.</p>}
+            {!students.length && <p className="game-empty">Añade jugadores desde Lista de jugadores.</p>}
             {students.length > 0 && allQuestionsUsed && <p className="game-empty">Todas las preguntas se han usado. Pulsa Reiniciar juego.</p>}
             {students.length > 0 && !allQuestionsUsed && currentModePlayer && !currentQuestion && (
               <div className="player-select-area">
