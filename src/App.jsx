@@ -884,6 +884,9 @@ function TeacherGame({ canEditQuestions = false, closeLabel = 'Volver a Profesor
             Lista de jugadores{students.length ? ` (${students.length})` : ''}
           </button>
         )}
+        {gameMode !== 'class' && gameStarted && (
+          <button className="game-mode-btn" type="button" onClick={resetGameState}>Reiniciar juego</button>
+        )}
         {gameMode !== 'class' && students.length > 0 && !gameStarted && !allQuestionsUsed && (
           <button className="primary-button" type="button" onClick={startGame}>Empezar a jugar</button>
         )}
@@ -893,17 +896,6 @@ function TeacherGame({ canEditQuestions = false, closeLabel = 'Volver a Profesor
           <>
             <button className="secondary-button" type="button" onClick={() => setShowStudentSetup(true)}>Lista de alumnos {students.length ? `(${students.length})` : ''}</button>
             {students.length > 0 && !gameStarted && <button className="primary-button" type="button" onClick={startGame}>Empezar a jugar</button>}
-          </>
-        )}
-        {gameStarted && (
-          <>
-            {!allQuestionsUsed && availableQuestions.length < questions.length && (
-              <span className="game-used-count">{usedQuestions.length} de {questions.length} preguntas usadas</span>
-            )}
-            {allQuestionsUsed && (
-              <span className="game-all-used">Todas las preguntas usadas</span>
-            )}
-            <button className="secondary-button" type="button" onClick={resetGameState}>Reiniciar juego</button>
           </>
         )}
       </div>
@@ -994,6 +986,12 @@ function TeacherGame({ canEditQuestions = false, closeLabel = 'Volver a Profesor
             {students.length > 0 && availableQuestions.length === 0 && usedQuestions.length > 0 && (
               <p className="game-empty">Todas las preguntas se han usado. Pulsa Reiniciar juego para empezar otra ronda.</p>
             )}
+            {gameStarted && !allQuestionsUsed && availableQuestions.length < questions.length && (
+              <span className="game-used-count">{usedQuestions.length} de {questions.length} preguntas usadas</span>
+            )}
+            {gameStarted && allQuestionsUsed && (
+              <span className="game-all-used">Todas las preguntas usadas</span>
+            )}
             <p className="game-empty">{students.length ? `${students.length} alumnos cargados. ${availableStudents.length} quedan por salir.` : ''}</p>
             <div className={isSpinning ? 'roulette-name spinning' : 'roulette-name'}>{selectedStudent || (students.length ? 'Pulsa la ruleta' : '')}</div>
             <button className="primary-button spin-button" type="button" onClick={spinStudent} disabled={!availableStudents.length || !availableQuestions.length || isSpinning || isQuestionPending || Boolean(currentQuestion)}>
@@ -1015,12 +1013,18 @@ function TeacherGame({ canEditQuestions = false, closeLabel = 'Volver a Profesor
       )}
       {gameMode === 'friends' && gameStarted && (
         <div className="teacher-game-grid">
-          <section className="teacher-game-stage">
+          <section className="teacher-game-stage teacher-game-stage--compact">
             {!students.length && <p className="game-empty">Añade jugadores desde Lista de jugadores.</p>}
             {students.length > 0 && allQuestionsUsed && <p className="game-empty">Todas las preguntas se han usado. Pulsa Reiniciar juego.</p>}
             {students.length > 0 && !allQuestionsUsed && currentModePlayer && !currentQuestion && (
               <div className="player-select-area">
                 <p className="game-empty">Turno de: <strong>{currentModePlayer}</strong></p>
+                {!allQuestionsUsed && availableQuestions.length < questions.length && (
+                  <span className="game-used-count">{usedQuestions.length} de {questions.length} preguntas usadas</span>
+                )}
+                {allQuestionsUsed && (
+                  <span className="game-all-used">Todas las preguntas usadas</span>
+                )}
                 <button className="primary-button" type="button" onClick={() => askQuestionForPlayer(currentModePlayer)} disabled={!availableQuestions.length}>
                   Preguntar
                 </button>
@@ -1049,12 +1053,18 @@ function TeacherGame({ canEditQuestions = false, closeLabel = 'Volver a Profesor
       )}
       {gameMode === 'bot' && gameStarted && (
         <div className="teacher-game-grid">
-          <section className="teacher-game-stage">
+          <section className="teacher-game-stage teacher-game-stage--compact">
             {!students.length && !isStudent && <p className="game-empty">Añade alumnos desde Lista de alumnos.</p>}
             {students.length > 0 && allQuestionsUsed && <p className="game-empty">Todas las preguntas se han usado. Pulsa Reiniciar juego.</p>}
             {students.length > 0 && !allQuestionsUsed && currentModePlayer && !currentQuestion && (
               <div className="player-select-area">
                 <p className="game-empty">Turno de: <strong>{currentModePlayer === '_bot' ? 'Bot' : 'Jugador'}</strong></p>
+                {!allQuestionsUsed && availableQuestions.length < questions.length && (
+                  <span className="game-used-count">{usedQuestions.length} de {questions.length} preguntas usadas</span>
+                )}
+                {allQuestionsUsed && (
+                  <span className="game-all-used">Todas las preguntas usadas</span>
+                )}
                 <button className="primary-button" type="button" onClick={() => {
                   if (currentModePlayer === '_bot') {
                     askBotQuestion();
